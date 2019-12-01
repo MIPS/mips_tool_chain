@@ -73,8 +73,8 @@ gcc_enable_targets=""
 skip_pdfs="no"
 
 src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
-	    "gdb:binutils-gdb" "gold:binutils-gdb" "binutils-gdb" "gcc" "qemu" "uclibc" \
-	    "gmp:packages" "mpfr:packages" "mpc:packages" "linux:packages" \
+	    "gdb:binutils-gdb" "gold:binutils-gdb" "binutils-gdb" "gcc" "qemu:gnutools-qemu" \
+	    "uclibc" "gmp:packages" "mpfr:packages" "mpc:packages" "linux:packages" \
 	    "expat:packages" "termcap:packages" "ncurses:packages" \
 	    "zlib:packages" "glib:packages" "pixman:packages" "bison:packages" \
 	    "Python:packages" "make:packages" "openssl:packages"\
