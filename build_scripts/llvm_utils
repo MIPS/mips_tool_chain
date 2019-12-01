@@ -1,0 +1,363 @@
+#!bin/bash
+
+function setup_llvm() {
+  target=$1
+
+  # prepare links for llvm tools
+  cd $src_dir/llvm/tools
+  if [ ! -h clang ]; then
+    ln -s ../../clang clang
+  fi
+  if [ ! -h lld ]; then
+    ln -s ../../lld lld
+  fi
+  if [ ! -h lldb ]; then
+    ln -s ../../lldb lldb
+  fi
+
+  build_directory=$bld_dir/llvm
+
+  mkdir -p $build_directory
+  pushd $build_directory
+  cmake -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX="$prefix" \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=On \
+    -DLLVM_TARGETS_TO_BUILD=Mips \
+    -DLLVM_TARGET_ARCH=Mips \
+    -DLLVM_DEFAULT_TARGET_TRIPLE="$target" \
+    $src_dir/llvm
+  ninja install
+  popd
+
+  pushd $prefix/bin
+  ln -sf clang ${target}-clang
+  ln -sf clang++ ${target}-clang++
+  popd
+}
+
+function setup_musl_headers() {
+  build_directory=$bld_dir/$multilib/$abi/musl
+  cp -fRL $src_dir/musl $build_directory
+
+  cat >$build_directory/config.mak <<EOF
+ARCH=mips
+prefix=$prefix/sysroot/$multilib/usr
+EOF
+
+  make -C $build_directory -j4 install-headers
+}
+
+function setup_linux_headers() {
+  build_directory=$src_dir/linux
+
+  make -C $build_directory \
+    headers_install ARCH=mips INSTALL_HDR_PATH=$prefix/sysroot/$multilib/usr
+}
+
+function setup_compiler_rt() {
+  build_directory=$bld_dir/$multilib/$abi/compiler-rt
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  C_FLAGS="${CCC_FLAGS} -nostdlib"
+  CXX_FLAGS="$C_FLAGS"
+
+  CLANG_VERSION=`llvm-config --version | sed -e 's/svn//'`
+
+  case $abi in
+    32|n32)
+      SIZEOF_VOID_P=4 ;;
+    64)
+      SIZEOF_VOID_P=8 ;;
+  esac
+
+  cmake -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX=$prefix/lib/clang/${CLANG_VERSION}/$multilib \
+    -DLLVM_LIBDIR_SUFFIX="$libsuffix" \
+    -DCMAKE_SYSTEM_NAME=Linux \
+    -DCMAKE_C_COMPILER_FORCED=True \
+    -DCMAKE_C_COMPILER=${target}-clang \
+    -DCMAKE_C_FLAGS="$C_FLAGS" \
+    -DCMAKE_CXX_COMPILER_FORCED=True \
+    -DCMAKE_SIZEOF_VOID_P=$SIZEOF_VOID_P \
+    -DCOMPILER_RT_DEFAULT_TARGET_TRIPLE="$target" \
+    -DCOMPILER_RT_BUILD_SANITIZERS=Off \
+  $src_dir/compiler-rt
+
+  ninja install
+
+  popd
+}
+
+function setup_musl() {
+  build_directory=$bld_dir/$multilib/$abi/musl
+  pushd $build_directory
+
+  export CROSS_COMPILE=${target}-
+  export LIBCC="--rtlib=compiler-rt"
+
+  ./configure \
+      CC=${target}-clang CFLAGS="$CCC_FLAGS -fuse-ld=ld" LD_FLAGS="$CFLAGS" \
+      --prefix=$prefix/sysroot/$multilib/usr \
+      --disable-debug --enable-warnings --enable-wrapper=all \
+      --enable-shared --target=$target \
+      --syslibdir="$prefix/sysroot/$multilib/lib${libsuffix}" \
+      --libdir="$prefix/sysroot/$multilib/usr/lib${libsuffix}"
+
+  make -j8
+  make install
+  popd
+}
+
+function setup_libunwind() {
+  build_directory=$bld_dir/$multilib/$abi/libunwind
+
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=$prefix/sysroot/$multilib/usr"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_BUILD_TYPE=Debug"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_C_COMPILER=${target}-clang"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER_FORCED=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER=${target}-clang++"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_ENABLE_LIBCXX=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCXX_SUPPORTS_CXX11=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_FUNWIND_TABLES=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_FPIC_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_NO_EXCEPTIONS_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_NO_RTTI_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_FSTRICT_ALIASING_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_HAS_NODEFAULTLIBS_FLAG=True"
+
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_C_FLAGS="$CCC_FLAGS" \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS" \
+  $src_dir/libunwind
+  ninja install
+
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBUNWIND_ENABLE_SHARED=False"
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_C_FLAGS="$CCC_FLAGS" \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS" \
+  $src_dir/libunwind
+  ninja install
+
+  popd
+}
+
+function setup_libcxx() {
+  build_directory=$bld_dir/$multilib/$abi/libcxx
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=$prefix/sysroot/$multilib/usr"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_BUILD_TYPE=Debug"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_C_COMPILER=${target}-clang"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER_FORCED=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER=${target}-clang++"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=Off"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_SUPPORTS_STD_EQ_CXX11_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_HAS_MUSL_LIBC=On"
+
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS -Wno-invalid-constexpr -nostdinc++ -nodefaultlibs" \
+  $src_dir/libcxx
+  ninja install
+
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_ENABLE_SHARED=Off"
+
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS -Wno-invalid-constexpr -nostdinc++ -nodefaultlibs" \
+  $src_dir/libcxx
+  ninja install
+
+  popd
+}
+
+function setup_libcxxabi() {
+  build_directory=$bld_dir/$multilib/$abi/libcxxabi
+
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  cmake -G "Ninja" \
+    -DCMAKE_INSTALL_PREFIX=$prefix/sysroot/$multilib/usr \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_C_COMPILER=${target}-clang \
+    -DCMAKE_CXX_COMPILER_FORCED=True \
+    -DCMAKE_CXX_COMPILER=${target}-clang++ \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS" \
+    -DLIBCXXABI_USE_LLVM_UNWINDER=On \
+    -DLIBCXXABI_LIBCXX_INCLUDES=$prefix/sysroot/$multilib/usr/include/c++/v1 \
+    -DLIBCXXABI_LIBUNWIND_PATH=$src_dir/libunwind \
+    -DCXX_SUPPORTS_CXX11=True \
+    -DLLVM_ENABLE_LIBCXX=True \
+    -DLIBCXXABI_HAS_WALL_FLAG=True \
+    -DLIBCXXABI_HAS_FPIC_FLAG=True \
+    -DLIBCXXABI_HAS_FSTRICT_ALIASING_FLAG=True \
+    -DLIBCXXABI_HAS_NODEFAULTLIBS_FLAG=True \
+    -DLIBCXXABI_HAS_NOSTDINCXX_FLAG=True \
+  $src_dir/libcxxabi
+
+  ninja install
+
+  popd
+}
+
+function setup_libcxx_with_libcxxabi() {
+  build_directory=$bld_dir/$multilib/$abi/libcxx_with_libcxxabi
+
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=$prefix/sysroot/$multilib/usr"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_BUILD_TYPE=Debug"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_C_COMPILER=${target}-clang"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER_FORCED=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER=${target}-clang++"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_ENABLE_ABI_LINKER_SCRIPT=Off"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_SUPPORTS_STD_EQ_CXX11_FLAG=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_CXX_ABI_INCLUDE_PATHS=$src_dir/libcxxabi/include"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_CXX_ABI=libcxxabi"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_HAS_MUSL_LIBC=On"
+
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS -Wno-invalid-constexpr" \
+  $src_dir/libcxx
+  ninja install
+
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLIBCXX_ENABLE_SHARED=Off"
+  cmake -G "Ninja" \
+    $CMAKE_FLAGS \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS -Wno-invalid-constexpr" \
+  $src_dir/libcxx
+  ninja install
+
+  popd
+}
+
+function setup_lldb() {
+  build_directory=$bld_dir/$multilib/$abi/lldb
+  mkdir -p $build_directory
+  pushd $build_directory
+
+  CMAKE_FLAGS="-DCMAKE_INSTALL_PREFIX=$prefix/sysroot/$multilib/usr"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_BUILD_TYPE=Release"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_C_COMPILER=$target-clang"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CXX_COMPILER=$target-clang++"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_TARGETS_TO_BUILD=Mips"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_TARGET_ARCH=Mips"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_DEFAULT_TARGET_TRIPLE=$target"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_TABLEGEN=$bld_dir/llvm/bin/llvm-tblgen"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCLANG_TABLEGEN=$bld_dir/llvm/bin/clang-tblgen"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_CROSSCOMPILING=True"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_FIND_ROOT_PATH=$TC_DIR/sysroot/$multilib"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DBUILD_SHARED_LIBS=Off"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_ENABLE_SHARED=Off"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLDB_DISABLE_LIBEDIT=1"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLDB_DISABLE_CURSES=1"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLDB_DISABLE_PYTHON=1"
+  CMAKE_FLAGS="$CMAKE_FLAGS -DLLVM_ENABLE_TERMINFO=0"
+
+  cmake -G "Ninja" $CMAKE_FLAGS \
+    -DCMAKE_C_FLAGS="$CCC_FLAGS -fuse-ld=ld" \
+    -DCMAKE_CXX_FLAGS="$CCC_FLAGS -fuse-ld=ld" \
+  $src_dir/llvm
+  ninja lldb-server
+  cp bin/lldb-server $prefix/bin/lldb-server-$multilib
+
+  popd
+}
+
+function get_cc_flags_from_multilib_and_abi() {
+  # {micro}mips{el}[-r1|-r2|-r6]{-mips16}[-soft|-hard]{-nan2008}{musl,glibc,ulibc}
+  case $multilib in
+    micromips*)
+      echo -n " -mmicromips" ;;
+  esac
+
+  case $multilib in
+    *mips-*) echo -n " -EB" ;;
+    *mipsel-*) echo -n " -EL" ;;
+  esac
+
+  echo -n " -mabi=$abi"
+  case $abi in
+    32) echo -n " -target mips-mti-linux -mips32" ;;
+    n32|64) echo -n " -target mips64-mti-linux -mips64" ;;
+  esac
+
+  case $multilib in
+    *-r1-*) echo -n "" ;;
+    *-r2-*) echo -n "r2" ;;
+    *-r3-*) echo -n "r3" ;;
+    *-r6-*) echo -n "r6" ;;
+  esac
+
+  case $multilib in
+    *-mips16-*) echo -n " -mips16" ;;
+  esac
+
+  case $multilib in
+    *-soft*) echo -n " -msoft-float" ;;
+    *-hard*) echo -n " -mhard-float" ;;
+  esac
+
+  # always use PIC.
+  echo -n " -fPIC"
+}
+
+function build_multilib() {
+  local multilib=$1 abi=$2 libsuffix=""
+
+  case $abi in
+    32) libsuffix="" ;;
+    n32) libsuffix="32" ;;
+    64) libsuffix="64" ;;
+  esac
+
+  local CCC_FLAGS=`get_cc_flags_from_multilib_and_abi`
+
+  rm -rf $bld_dir/$multilib/$abi
+  mkdir -p $bld_dir/$multilib/$abi
+
+  setup_linux_headers
+  setup_musl_headers
+  setup_compiler_rt
+  setup_musl
+  setup_libcxx
+  setup_libunwind
+  setup_libcxxabi
+  setup_libcxx_with_libcxxabi
+  #setup_lldb
+}
+
+function build_llvm_component() {
+  component=$1
+  local target=$2
+  local src_dir=$TOPDIR/$src_dir
+
+  set -e
+  case $component/$target in
+    llvm/*|clang/*)
+      setup_llvm $target
+      ;;
+    llvm_multilibs/*)
+      build_multilib mips-r2-hard-musl 32
+      build_multilib mipsel-r2-hard-musl 32
+      ;;
+    *)
+      echo "Bad LLVM build component/target ($component/$target)";
+      exit 1 ;;
+  esac
+  set +e
+}

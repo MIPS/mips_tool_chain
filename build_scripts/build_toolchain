@@ -1,0 +1,1878 @@
+#!/bin/bash
+
+# -----------------------------------------------------------------------------
+# Copyright (c) 2014, Imagination Technologies Limited.
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+#   * Redistributions of source code must retain the above copyright
+#     notice, this list of conditions, and the following disclaimer.
+#   * Redistributions in binary form must reproduce the above copyright
+#     notice, this list of conditions, and the following disclaimer in the
+#     documentation and/or other materials provided with the distribution.
+#   * Neither the name of Imagination Technologies Limited nor the
+#     names of its contributors may be used to endorse or promote products
+#     derived from this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+# THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+# PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL IMAGINATION TECHNOLOGIES LIMITED
+# BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES, LOSS OF USE, DATA, OR PROFITS, OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+# -----------------------------------------------------------------------------
+
+prefix=""
+build_prefix=""
+bld_dir="obj"
+bld_subdir=""
+bld_altdir=""
+src_dir="src"
+host=""
+build_triple=""
+hostlibs=""
+buildlibs=""
+target=""
+components=""
+jobs=1
+dejagnu_sim=""
+dejagnu_sim_options=""
+dejagnu_sim_link_flags=""
+dejagnu_sim_ldscript=""
+dejagnu_remote=""
+dejagnu_baseboard=""
+extra_config_opts=""
+make_target_all=""
+make_target_install=""
+make_target_check=""
+runtestflags=""
+build_version=""
+disable_multilib=""
+preview="no"
+git_home=""
+git_ref=""
+gcc_branch=""
+languages="c,c++,fortran"
+grep_multilibs=""
+localgit="no"
+build32="no"
+bugurl=""
+pkgversion=""
+sysrootlayout=""
+gcc_arch=""
+gcc_abi=""
+gcc_endian=""
+gcc_enable_targets=""
+skip_pdfs="no"
+
+src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
+	    "gdb:binutils-gdb" "gold:binutils-gdb" "binutils-gdb" "gcc" "qemu" "uclibc" \
+	    "gmp:packages" "mpfr:packages" "mpc:packages" "linux:packages" \
+	    "expat:packages" "termcap:packages" "ncurses:packages" \
+	    "zlib:packages" "glib:packages" "pixman:packages" "bison:packages" \
+	    "Python:packages" "make:packages" "openssl:packages"\
+	    "smallclib" \
+            "llvm" "clang" "lld" "lldb" "compiler-rt" "musl" \
+            "libunwind" "libcxx" "libcxxabi" "mingw:packages" \
+            "mingw-w64:packages" "gettext:packages" "libiconv:packages" \
+            "libffi:packages" "texinfo:packages" \
+	    "binutils-binutils:binutils-gdb" "binutils-ld:binutils-gdb" \
+	    "binutils-gas:binutils-gdb" "gdb-py:binutils-gdb" "python:cpython")
+
+src_list=( )
+src_arglist=( )
+branch_list=( )
+branch_arglist=( )
+patch_arglist=( )
+version_arglist=( )
+if [ ! -d /dev/shm ]; then
+    export TMPDIR=/dev/shm
+fi
+# Searches for the first argument within the list that follows.
+# value=`find_list_entry "gcc" "foo:bar" "gcc:moo"` would return 'moo'.
+# If the argument is not found then we return an empty string.
+
+function find_list_entry() {
+  local needle="$1"
+  shift
+  while [ $# -ne 0 ]; do
+    if [ "x$needle" = "x${1%%:*}" ]; then
+      echo "${1#*:}"
+      break;
+    fi
+    shift
+  done
+  # Did not find it
+  echo ""
+}
+
+# Set up the src_list and branch_list variables to contain the locations
+# and branches of the various sources being used.  The sources used can
+# be affected by the --git_home, --src, and --branch options.
+
+function init_default_src() {
+
+    if [ "${git_home}" = "" ] ; then
+	# For read-only checkouts use: --git_home="https://github.com/MIPS"
+	git_home="ssh://git@github.com/MIPS"
+    fi
+
+    for src in "${src_repos[@]}"; do
+	srcname="${src%%:*}"
+	srcrepo="${src#*:}"
+
+	repoarg=`find_list_entry "${srcname}" "${src_arglist[@]}"`
+	if [ "${repoarg}" = "" ]; then
+	    if [ "${srcrepo}" = "${srcrepo/:}" ] ; then
+		repo_entry="${srcname}:${git_home}/${srcrepo}.git"
+	    else
+		repo_entry="${srcname}:${srcrepo}"
+	    fi
+	    src_list=( "${src_list[@]}" "${repo_entry}" )
+	else
+	    repo_entry="${srcname}:${repoarg}"
+	    src_list=( "${src_list[@]}" "${repo_entry}" )
+	fi
+	brancharg=`find_list_entry "${srcname}" "${branch_arglist[@]}"`
+	if [ "${brancharg}" = "" ]; then
+	    brancharg=`find_list_entry "all" "${branch_arglist[@]}"`
+	    if [ "${brancharg}" = "" ]; then
+		branch_list=( "${branch_list[@]}" "${srcname}:master" )
+	    else
+		branch_list=( "${branch_list[@]}" "${srcname}:${brancharg}" )
+	    fi
+	else
+	    branch_list=( "${branch_list[@]}" "${srcname}:${brancharg}" )
+	fi
+    done
+}
+
+# Parse the various arguments that can be passed in to build_toolchain.
+# These include:
+
+function parse_args() {
+    local prg=`basename "$0"`
+    # If "$prg" is not added before "$@"on the getopt call,
+    # the first option is ignored.
+    local opts=`getopt --name "$prg" --longoptions build_triple:,buildlibs:,host:,hostlibs:,target:,sysroot:,prefix:,path:,build:,build_subdir:,build_altdir:,source:,jobs:,src:,branch:,patch:,version:,dejagnu_sim:,dejagnu_sim_options:,dejagnu_sim_link_flags:,dejagnu_sim_ldscript:,dejagnu_remote:,dejagnu_baseboard:,extra_config_opts:,make_target_all:,make_target_install:,make_target_check:,runtestflags:,build_version:,git_home:,git_ref:,gcc_branch:,languages:,with-bugurl:,with-pkgversion:,grep_multilibs:,sysrootlayout:,with-arch:,with-abi:,with-endian:,enable-targets:,disable-multilib,preview,localgit,32bit-build,no-pdf -- "$prg" "$@"`
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+	    --path) PATH="$2:$PATH" ; shift 2 ;;
+	    --host) host="$2" ; shift 2 ;;
+	    --build_triple) build_triple="$2" ; shift 2 ;;
+	    --buildlibs) buildlibs="$2" ; shift 2 ;;
+	    --hostlibs) hostlibs="$2" ; shift 2 ;;
+	    --target) target="$2" ; shift 2 ;;
+            --sysroot) sysroot="$2" ; shift 2 ;;
+	    --prefix) prefix="$2" ; shift 2 ;;
+	    --build) bld_dir="$2" ; shift 2 ;;
+	    --build_subdir) bld_subdir="$2" ; shift 2 ;;
+	    --build_altdir) bld_altdir="$2" ; shift 2 ;;
+	    --source) src_dir="$2" ; shift 2 ;;
+	    --jobs) jobs=$2; shift 2 ;;
+	    --dejagnu_sim) dejagnu_sim="$2" ; shift 2 ;;
+	    --dejagnu_sim_options) dejagnu_sim_options="$2" ; shift 2 ;;
+	    --dejagnu_sim_link_flags) dejagnu_sim_link_flags="$2" ; shift 2 ;;
+	    --dejagnu_sim_ldscript) dejagnu_sim_ldscript="$2" ; shift 2 ;;
+	    --dejagnu_remote) dejagnu_remote="$2" ; shift 2 ;;
+	    --dejagnu_baseboard) dejagnu_baseboard="$2" ; shift 2 ;;
+	    --extra_config_opts) extra_config_opts="$2" ; shift 2 ;;
+	    --make_target_all) make_target_all="$2" ; shift 2;;
+	    --make_target_install) make_target_install="$2" ; shift 2;;
+	    --make_target_check) make_target_check="$2" ; shift 2;;
+	    --runtestflags) runtestflags="$2" ; shift 2;;
+	    --src) src_arglist=( "$2" "${src_arglist[@]}" ) ; shift 2 ;;
+	    --branch) branch_arglist=( "$2" "${branch_arglist[@]}" ) ; shift 2 ;;
+	    --patch) patch_arglist=( "$2" "${patch_arglist[@]}" ) ; shift 2 ;;
+	    --version) version_arglist=( "$2" "${version_arglist[@]}" ) ; shift 2 ;;
+            --build_version) build_version="$2" ; shift 2 ;;
+	    --git_home) git_home="$2" ; shift 2 ;;
+	    --git_ref) git_ref="$2" ; shift 2 ;;
+	    --gcc_branch) gcc_branch="$2" ; shift 2 ;;
+	    --languages) languages="$2" ; shift 2 ;;
+	    --with-bugurl) bugurl="$2" ; shift 2 ;;
+	    --with-pkgversion) pkgversion="$2" ; shift 2 ;;
+	    --grep_multilibs) grep_multilibs="$2" ; shift 2 ;;
+	    --sysrootlayout) sysrootlayout="$2" ; shift 2 ;;
+	    --with-arch) gcc_arch="$2" ; shift 2 ;;
+	    --with-abi) gcc_abi="$2" ; shift 2 ;;
+	    --with-endian) gcc_endian="$2" ; shift 2 ;;
+	    --enable-targets) gcc_enable_targets="$2" ; shift 2 ;;
+	    --disable-multilib) disable_multilib="$1" ; shift 1 ;;
+	    --preview) preview="yes" ; shift 1 ;;
+	    --localgit) localgit="yes" ; shift 1 ;;
+	    --32bit-build) build32="yes" ; shift 1 ;;
+	    --no-pdf) skip_pdfs="yes" ; shift 1 ;;
+	    --) shift ; break ;;
+	    *) echo "Error: Cannot parse command line" >&2 ; exit 1 ;;
+        esac
+    done
+
+    components="$@"
+
+    init_default_src
+
+    if [ "$target" = "" ] ; then
+	target=mips-linux-gnu
+    fi
+    if [ "$prefix" = "" ]; then
+	prefix=install
+    fi
+    if [ "$build_prefix" = "" ]; then
+	if [ "$target" = "native" ] ; then
+	    build_prefix=install
+	else
+	    build_prefix=build-install
+	fi
+    fi
+    prefix=$(readlink -m $prefix)
+    build_prefix=$(readlink -m $build_prefix)
+
+    linux_arch=`echo $target | sed 's/-.*$//'`
+    case $linux_arch in
+      mips*) linux_arch="mips" ;;
+      nanomips*) linux_arch="mips" ;;
+      i686*) linux_arch="x86";;
+    esac
+
+    if [ "$sysroot" = "" ] ; then
+      case $target in
+	*elf) sysroot=$prefix/$target ;;
+	*linux-gnu) sysroot=$prefix/sysroot ;;
+      esac
+    fi
+
+    # Set default kernel version.  If the user specified a version it will
+    # come at the beginning of the list and override these defaults.  We
+    # could set defaults for other components that are in packages.git too.
+    # versions are only used for things stored in packages.git.
+
+    case $target in
+	mips*mti*) version_arglist=( "$version_arglist" "linux:4.9.189" ) ;;
+	mips*img*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
+	mips*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
+	nanomips*) version_arglist=( "$version_arglist" "linux:nda" ) ;;
+	i686*|x86_64*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
+    esac
+
+    if [ "$bld_dir" != "" ]; then
+      bld_dir=$(readlink -m $bld_dir)
+    fi
+
+    PATH=$PATH:$prefix/bin
+}
+
+# If any patches were specified in the argument list, then apply
+# them to the relavent sources.  This is done when the sources
+# are initially downloaded/installed.  After a source tree is in
+# place, we assume it has been patched and do not try to patch
+# it again.
+
+# If the component is "gcc" we also run 'contrib/gcc_update', this
+# script touches certain fails to reset the date stamp on them and
+# avoid unneeded reconfigures and rebuilds on newly downloaded
+# sources.
+
+function update_src_and_apply_patches () {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+
+    if [ ! -d $src_dir/$name ] ; then
+	echo "Error: Source directory $src_dir/$name does not exist."
+	exit 1
+    fi
+
+    for i in "${patch_arglist[@]}"
+    do
+	n=${i%%:*}
+	p=${i#*:}
+	if [ "$n" = "$name" ] ; then
+	    b=`basename $p`
+	    if [ ! -f $src_dir/$b ] ; then
+		(cd $src_dir; wget -t 10 -nv $p)
+	    fi
+	    p=$src_dir/$b
+	    if [ -f $p ] ; then
+		(cd $src_dir/$name; patch -t -p 1 < $p)
+		if [ $? -ne 0 ] ; then
+		    echo "Error: Patch ($b) failed"
+		    exit 1
+		fi
+	    fi
+	fi
+    done
+
+    if [ "$name" = "gcc" ] ; then
+	(cd $src_dir/$name; contrib/gcc_update --touch)
+    fi
+    if [ "$name" = "glibc" ] ; then
+	(cd $src_dir/$name; touch intl/plural.c)
+    fi
+}
+
+# Check that the source tree for a specified component is in place
+# and if not, download it.
+# Argument 1 is the source location specified with a --src= argument.
+# Argument 2 is the source directory specified with the --source argument.
+# Argument 3 is the name of the component whose source we want.
+
+function check_src() {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+
+    if [ "$preview" = "yes" ] ; then
+	return
+    fi
+
+    if [ ! -d $src_dir ] ; then
+	mkdir -p $src_dir
+    fi
+
+    tmpp1=`expr substr "$src" 1 4`
+    tmpp2=`expr substr "$src" 1 5`
+    if [ "$tmpp1" = "ftp:" -o "$tmpp2" = "http:" ] ; then
+      b=`basename $src`
+      if [ ! -f $src_dir/$b ] ; then
+	(cd $src_dir; wget -t 10 -nv $src)
+      fi
+      src=$src_dir/$b
+    fi
+
+    if [ "$src" = "" ] ; then
+	echo "Error: You must specify a $name source tree"
+	exit 1
+    fi
+
+    if [ ! -d $src ] ; then
+	if [ ! -f $src ] ; then
+	    if [ "$localgit" = "yes" ] ; then
+		git_src=`echo $src | sed -e 's,^file://,,'`
+	    else
+		git_src="$src"
+	    fi
+	    git_args=""
+	    branch_name=`find_list_entry "$name" "${branch_list[@]}"`
+	    if [ "${branch_name}" != "" ] ; then
+	        git_args="$git_args -b $branch_name"
+		 if [ "1.7.10" == $( echo "1.7.10
+"`git --version | cut -d\  -f 3`  | sort -V | head -n 1 ) ]; then
+		     git_args="$git_args --single-branch"
+		 fi
+	    fi
+	    if [ "x${git_ref}" != "x" -a -d "${git_ref}" ]; then
+		git_args="$git_args --reference=$git_ref"
+	    fi
+	    if [ "$src" = "$git_home/packages.git" ] ; then
+		if [ ! -d $src_dir/packages ] ; then
+		    (cd $src_dir; git clone $git_args $git_src packages)
+		fi
+		pver=`find_list_entry "$name" "${version_arglist[@]}"`
+	        c=`(cd $src_dir/packages; ls ${name}*${pver}* 2>/dev/null | wc -l)`
+		if [ $c -eq 0 ] ; then
+		    if [ "$pver" = "" ] ; then
+			echo "Error: Package ${name} not found in packages.git"
+		    else
+			echo "Error: Package ${name} with version ${pver} not found in packages.git"
+		    fi
+		    exit 1
+		elif [ $c -gt 1 ] ; then
+		    if [ "$pver" = "" ] ; then
+			echo "Error: Package ${name} matches multiple files in packages.git"
+		    else
+			echo "Error: Package ${name} with version ${pver} matches multiple files in packages.git"
+		    fi
+		    exit 1
+		fi
+	        s=`(cd $src_dir/packages; ls ${name}*${pver}*)`
+		src=$src_dir/packages/$s
+	    fi
+	    if [ ! -f $src -a ! -d $src_dir/$name ] ; then
+		(cd $src_dir; git clone $git_args $git_src $name)
+	        update_src_and_apply_patches $1 $2 $3
+	    fi
+	fi
+	if [ -f $src ] ; then
+	    if [ ! -d $src_dir/$name ] ; then
+		if [ ! -d $src_dir/tmp ] ; then
+		    mkdir $src_dir/tmp
+		fi
+		(cd $src_dir/tmp; tar -xf $src)
+		count=`ls $src_dir/tmp | wc -l`
+		if [ $count -ne 1 ] ; then
+		    echo "Error: untar failed"
+		    exit 1
+		fi
+		n=`(cd $src_dir/tmp; ls)`
+		mv $src_dir/tmp/$n $src_dir/$name
+	        update_src_and_apply_patches $1 $2 $3
+	    fi
+	fi
+	src="$src_dir/$name"
+    fi
+    if [ ! -d $src ] ; then
+	echo "Error: The $name source tree ($src) does not exist or is not a directory"
+	exit 1
+    fi
+}
+
+# Return the location of the source tree for a given component.
+# This function takes the same arguments as check_src.
+
+function find_src() {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+    if [ ! -d $src ] ; then
+	if [ "x$name" = "xgdb-py" ]; then
+	    src="$src_dir/gdb"
+	else
+	    src="$src_dir/$name"
+	fi
+    fi
+    echo $(readlink -m $src)
+}
+
+# Update source will run git pull on a source tree if it is a git repository
+# otherwise it does nothing.  This function takes the same arguments as
+# check_src.
+
+function update_src() {
+    local src="$1"
+    local src_dir="$2"
+    local name="$3"
+    src=`find_src $1 $2 $3`
+    if [ "$preview" != "yes" ] ; then
+	if [ -d $src/.git ] ; then
+	    echo "UPDATE: cd $src; git pull"
+	    (cd $src; git pull)
+	fi
+    fi
+}
+
+# This function looks at the kernel sources (needed if building glibc or
+# uclibc) and returns the version number.  It takes no arguments.
+
+function get_linux_ver() {
+    s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    src=`find_src ${s} ${src_dir} linux`
+    if [ "$preview" = "yes" ] ; then
+        min_kernel_ver='KERNEL_version.patchlevel.sublevel(extraversion)'
+    elif [ -f $src/Makefile ] ; then
+	version=`cat $src/Makefile | grep '^VERSION =' | awk '{print $3}'`
+	patchlevel=`cat $src/Makefile | grep '^PATCHLEVEL =' | awk '{print $3}'`
+	sublevel=`cat $src/Makefile | grep '^SUBLEVEL =' | awk '{print $3}'`
+	extraversion=`cat $src/Makefile | grep '^EXTRAVERSION =' | awk '{print $3}'`
+	min_kernel_ver="${version}.${patchlevel}.${sublevel}${extraversion}"
+    else
+	echo "Error: No Makefile found in the linux source tree"
+	exit 1
+    fi
+    echo "$min_kernel_ver"
+}
+
+# This function runs the configure script for a particular component.
+# Argument 1 is the component name.
+# Argument 2 is the object directory we are going to run configure in.
+# Argument 3 is the path to the configure script 
+# Arguments 4+ are flags to be passed in to the configure script (quoted)
+
+function do_configure() {
+
+    local component_name=$1
+    local objdir=$2
+    local config_script=$3
+    shift;shift;shift;
+    local config_flags=( "${@}" )
+
+    if [ "${config_script%%cmake}cmake" != "$config_script" ] ; then
+      if [ "$bugurl" != "" -a "$component_name" != "qemu" ] ; then
+	config_flags=( "${config_flags[@]}" "--with-bugurl=$bugurl" )
+      fi
+      if [ "$pkgversion" != "" ] ; then
+	config_flags=( "${config_flags[@]}" "--with-pkgversion=$pkgversion" )
+      fi
+    fi
+    if [ "$config_script" = "" ] ; then
+      return 0
+    fi
+    if [ "$preview" = "yes" ] ; then
+      echo "cd $objdir"
+      echo "$config_script" "${config_flags[@]}"
+    else
+      if [ ! -d $objdir -o ! -f $objdir/Makefile ] ; then
+	mkdir -p $objdir
+	(
+	cd $objdir || exit 1
+	echo "CD: cd $objdir"
+	echo "CONFIGURE: $config_script" "${config_flags[@]}"
+	if [ "x$host" != "x" ] ; then
+	  case $component in
+	      termcap)
+		  export AR=${host}-ar
+		  export RANLIB=${host}-ranlib
+		  export CC=${host}-gcc
+		  export CXX=${host}-g++
+		  export ac_cv_header_stdc=yes
+		  ;;
+	  esac
+	  case $host in
+	      *-*-mingw*)
+		  hsysroot=`${host}-gcc -print-sysroot`
+		  export CFLAGS="$CFLAGS -O2 -L$hsysroot/lib/gcc/$host/lib"
+		  export CXXFLAGS="$CFLAGS"
+		  ;;
+	  esac
+	fi
+	case component_name/$target in
+	    zlib/*-*-mingw*)
+		export CFLAGS="$CFLAGS -L$prefix/lib/gcc/$target/lib"
+		export CXXFLAGS="$CFLAGS"
+		if [ "x$config_script" == "xcmake" ]; then
+		    config_flags=( "${config_flags[@]}" "-DCMAKE_SHARED_LINKER_FLAGS=$CFLAGS" )
+		fi
+		;;
+	esac
+	$config_script "${config_flags[@]}" || exit 1
+	)
+	return $?
+      fi
+    fi
+}
+
+
+# This function runs make for a particular component.
+# Argument 1 is the component name.
+# Argument 2 is the object directory we are going to run configure in.
+# Argument 3 is the flags and target names to pass in to the makefile
+#   (passed to do_make as a single string).
+
+function do_make() {
+
+    local component_name=$1
+    local objdir=$2
+    local make_args="$3"
+    local make_jobs=""
+
+    if [ $jobs -gt 1 ] ; then
+      if [ "$component_name" = "glibc" ]; then
+        make_args="$make_args PARALLELMFLAGS=--jobs=$jobs"
+      else
+        make_jobs="--jobs=$jobs --load-average=$jobs"
+      fi
+    fi
+    if [ "$preview" = "yes" ] ; then
+      echo "cd $objdir"
+      echo "make $make_jobs $make_args"
+    else
+      if [ "$make_args" != "" ] ; then
+	if [ ! -d $objdir ] ; then
+	  echo "Error: Cannot run make in $objdir, does not exist."
+	  exit 1
+	fi
+	(
+	  cd $objdir
+	  echo "CD: cd $objdir"
+	  echo "MAKE: make $make_jobs $make_args"
+	  make $make_jobs $make_args || exit 1
+	)
+	return $?
+      fi
+    fi
+}
+
+# This function will cause an exit if the second argument passed in
+# is non-zero.  We do not check the return of 'make' in do_make because
+# for some makes (those doing 'make check' for example) we do not want
+# to exit.
+# Argument 1 is the name of the command whose return code we are checking.
+# Argument 2 is the return value from that command.
+
+function check_return() {
+    command=$1
+    ret_val=$2
+    if [ $ret_val -ne 0 ] ; then
+        if [ "${command}" = "make" ] ; then
+	    echo "Error: Make command failed, stopping build."
+	elif [ "${command}" = "configure" ] ; then
+	    echo "Error: Configure command failed, stopping build."
+	else
+	    echo "Error: ${command} command failed, stopping build."
+	fi
+	exit $ret_val
+    fi
+}
+
+# This function returns whether to use the "old", "new", or "default"
+# sysroot layout.  It should not be called before the initial_gcc
+# component is built.
+
+function get_sysroot_layout() {
+    local target_gcc=${target}-gcc
+    if [ "$sysrootlayout" = "" ] ; then
+	case $target in
+	*mti*|*img*|nanomips*)
+		hs=`$target_gcc --print-sysroot-headers-suffix 2>/dev/null`
+		case $hs in
+			/mips*) sysrootlayout="new" ;;
+			/nanomips*) sysrootlayout="new" ;;
+			*) sysrootlayout="old" ;;
+		esac ;;
+
+	*)
+		sysrootlayout="default" ;;
+	esac
+    fi
+    echo "$sysrootlayout"
+}
+
+# This function is used by build_one_glibc and build_one_uclibc to copy
+# the linux header files into the sysroot where those libraries will install
+# their own headaers and libraries.  It takes no arguments.
+
+function build_linux_headers() {
+    local target_gcc=${target}-gcc
+    local s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    local src=`find_src ${s} ${src_dir} linux`
+
+    sysrootlayout=`get_sysroot_layout`
+    if [ "$sysrootlayout" != "new" ] ; then
+      do_make linux_headers $src "headers_install ARCH=$linux_arch INSTALL_HDR_PATH=$sysroot/usr"
+      check_return make $?
+
+      need_uclibc_sys_headers=`$target_gcc --print-multi-lib | grep uclibc`
+      if [ "${need_uclibc_sys_headers}" != "" ] ; then
+	do_make linux_headers $src "headers_install ARCH=$linux_arch INSTALL_HDR_PATH=$sysroot/uclibc/usr"
+	check_return make $?
+      fi
+    fi
+}
+
+function copy_linux_headers() {
+    local s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    local src=`find_src ${s} ${src_dir} linux`
+
+    local root=$1
+    do_make linux_headers $src "headers_install ARCH=$linux_arch INSTALL_HDR_PATH=$root/usr"
+    check_return make $?
+}
+
+# This function builds a single version of the uclibc library for a given
+# set of GCC options (hard-float/soft-float, big-endian/little-endian, etc).
+# Argument 1 is one line from the output of 'gcc --print-multi-libs',
+# this defines what flags to compile uclibc with and what directory to put
+# the libraries into.
+
+function build_one_uclibc() {
+    ml=$*
+    component=uclibc
+
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+
+    sysrootlayout=`get_sysroot_layout`
+
+    nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+    libc_subdir="obj_${nn}"
+    if [ "$bld_altdir" = "" ] ; then
+      build_directory=$bld_dir/$component/$libc_subdir
+    else
+      build_directory=$bld_dir/$bld_altdir/$libc_subdir
+    fi
+
+    if [ "$sysrootlayout" = "new" ] ; then
+      arch_prefix=`get_arch_prefix $ml`
+      # Should check to see if I have already done this
+      copy_linux_headers $sysroot/$arch_prefix
+    fi
+
+    if [ ! -d $build_directory ] ; then
+      mkdir -p $build_directory
+    fi
+
+    dd=`echo $ml | sed -e 's/;.*$//'`
+    if [ "$dd" = "." ] ; then
+      exec_prefix="/usr"
+    else
+      exec_prefix="/$dd/usr"
+    fi
+# _el_ is used for old sysroot style, mipsel for the new sysroot style
+    case _${nn}_ in
+	*_el_*)   UCLIBC_EXTRA_CFLAGS="-EL" ;;
+	*mipsel*) UCLIBC_EXTRA_CFLAGS="-EL" ;;
+	*)        UCLIBC_EXTRA_CFLAGS="-EB" ;;
+    esac
+# _mips64 is used for old sysroot style, lib32/lib64 for the new sysroot style
+    case _${nn}_ in
+	*lib32*)   ;;
+	*lib64*)   ;;
+	*_mips64*) ;;
+	*)	   UCLIBC_EXTRA_CFLAGS="$UCLIBC_EXTRA_CFLAGS -mfp32" ;;
+    esac
+    UCLIBC_EXTRA_LDFLAGS="$UCLIBC_EXTRA_CFLAGS"
+
+    export UCLIBC_EXTRA_CFLAGS
+    export UCLIBC_EXTRA_LDFLAGS
+
+    MFLAGS="VERBOSE=1 CROSS_COMPILE=${target}- PREFIX=$sysroot O=$build_directory ARCH=mips"
+    # Assume we only use 'old' uclibc sources with GROUP_DIR change for the
+    # old layout and 'new' uclibc sources with DEVEL_GROUP_DIR and
+    # RUNTIME_GROUP_DIR change for the new layout.
+    if [ "$sysrootlayout" = "new" ] ; then
+      MFLAGS="$MFLAGS KERNEL_HEADERS=$sysroot/$arch_prefix/usr/include DEVEL_GROUP_DIR=/usr/lib RUNTIME_GROUP_DIR=/lib"
+    else
+      MFLAGS="$MFLAGS KERNEL_HEADERS=$sysroot/usr/include GROUP_DIR=usr/lib/"
+    fi
+
+    pushd $src > /dev/null
+    do_make uclibc $src "${MFLAGS} defconfig"
+    check_return make $?
+    tconfig=/tmp/config.$$
+    cat $build_directory/.config | grep -v -e '^#' -e ENDIAN -e ISA -e ABI -e HAS_FPU -e NAN -e UCLIBC_EXTRA_CFLAGS -e LDSO_RUNPATH_OF_EXECUTABLE > $tconfig
+
+    echo "UCLIBC_EXTRA_CFLAGS=\"$UCLIBC_EXTRA_CFLAGS\"" >> $tconfig
+    echo "LDSO_RUNPATH_OF_EXECUTABLE=y" >> $tconfig
+
+# _el_ is used for old sysroot style, mipsel for the new sysroot style
+    case _${nn}_ in
+	*_el_*)   echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_LITTLE_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_LITTLE_ENDIAN=y" >> $tconfig ;;
+	*mipsel*) echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_LITTLE_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_LITTLE_ENDIAN=y" >> $tconfig ;;
+	*)        echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_BIG_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_BIG_ENDIAN=y" >> $tconfig ;;
+    esac
+# mips32/mips64 are used for old sysroot style, r1/r2 for the new sysroot style
+    case _${nn}_ in
+	*r1*lib32*) echo "CONFIG_MIPS_ISA_MIPS64=y"   >> $tconfig ;;
+	*r1*lib64*) echo "CONFIG_MIPS_ISA_MIPS64=y"   >> $tconfig ;;
+	*r1*)	    echo "CONFIG_MIPS_ISA_MIPS32=y"   >> $tconfig ;;
+	*r2*lib32*) echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*r2*ib64*)  echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*r2*)	    echo "CONFIG_MIPS_ISA_MIPS32R2=y" >> $tconfig ;;
+	*_mips32_*) echo "CONFIG_MIPS_ISA_MIPS32=y" >> $tconfig ;;
+	*_mips64_*) echo "CONFIG_MIPS_ISA_MIPS64=y" >> $tconfig ;;
+	*_mips64r2_*) echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_ISA_MIPS32R2=y" >> $tconfig ;;
+    esac
+# mips64 is used for old sysroot style, lib32/lib64 for the new sysroot style
+    case _${nn}_ in
+	*_mips64*_64_*)  echo "CONFIG_MIPS_N64_ABI=y" >> $tconfig ;;
+	*_mips64*)  echo "CONFIG_MIPS_N32_ABI=y" >> $tconfig ;;
+	*lib64*)    echo "CONFIG_MIPS_N64_ABI=y" >> $tconfig ;;
+	*lib32*)    echo "CONFIG_MIPS_N32_ABI=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_O32_ABI=y" >> $tconfig ;;
+    esac
+    case _${nn}_ in
+	*nan2008*)  echo "CONFIG_MIPS_NAN_2008=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_NAN_LEGACY=y" >> $tconfig ;;
+    esac
+    case _${nn}_ in
+	*_sof_*)    ;;
+	*-soft*)    ;;
+	*)	    echo "UCLIBC_HAS_FPU=y"  >> $tconfig ;;
+    esac
+
+    # uclibc builds shared only by default, DOPIC should give us both.
+    # echo "DOPIC=y" >> $tconfig
+    # echo "HAVE_SHARED=n" >> $tconfig
+    echo "UCLIBC_HAS_THREADS_NATIVE=y" >> $tconfig
+    ## We do not want multilib prefixes in linker scripts. It doesn't work.
+    #echo "HARDWIRED_ABSPATH=n" >> $tconfig
+
+    do_make uclibc $src "${MFLAGS} KCONFIG_ALLCONFIG=$tconfig allnoconfig"
+    check_return make $?
+    do_make uclibc $src "${MFLAGS} all"
+    check_return make $?
+    if [ "$sysrootlayout" != "new" ] ; then
+	if [ "$dd" = "uclibc" ] ; then
+	    do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/$exec_prefix/usr/ install_headers"
+	    check_return make $?
+	fi
+    fi
+    if [ "$sysrootlayout" = "new" ] ; then
+	do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/$arch_prefix/usr/ RUNTIME_PREFIX=/$arch_prefix/ MULTILIB_DIR=lib install"
+    else
+	do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/ RUNTIME_PREFIX=/ MULTILIB_DIR=$exec_prefix/lib install"
+    fi
+    check_return make $?
+    popd > /dev/null
+
+    unset UCLIBC_EXTRA_CFLAGS UCLIBC_EXTRA_LDFLAGS
+
+    # We need to reset CC and CXX because we changed them for the glibc build
+    # and we might build something (gcc, qemu) after building glibc.
+    if [ "${build32}" = "yes" ] ; then
+        export CC='gcc -march=i486 -m32'
+        export CXX='g++ -march=i486 -m32'
+    fi
+}
+
+# This function maps compiler settings (arch, endian, etc) into a sysroot
+# name.
+
+function get_arch_prefix() {
+    local ml=$*
+    local gcc_flags=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+    local target_gcc=${target}-gcc
+    local sysroot_prefix=`$target_gcc $gcc_flags --print-multi-os-directory`
+    local arch_prefix=`echo $sysroot_prefix | sed -e 's,/.*$,,'`
+    case $arch_prefix in
+	mips*) ;;
+	micromips*) ;;
+	nanomips*) ;;
+	*) echo "Error architecture prefix ($arch_prefix) is bad." ;;
+    esac
+    echo $arch_prefix
+}
+
+# This function builds a single version of the glibc library for a given
+# set of GCC options (hard-float/soft-float, big-endian/little-endian, etc).
+# Argument 1 is one line from the output of 'gcc --print-multi-libs',
+# this defines what flags to compile uclibc with and what directory to put
+# the libraries into.
+
+function build_one_glibc() {
+    ml=$*
+    component=glibc
+
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+
+    sysrootlayout=`get_sysroot_layout`
+
+    nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+    libc_subdir="obj_${nn}"
+    if [ "$bld_altdir" = "" ] ; then
+      build_directory=$bld_dir/$component/$libc_subdir
+    else
+      build_directory=$bld_dir/$bld_altdir/$libc_subdir
+    fi
+
+    if [ "$sysrootlayout" = "new" ] ; then
+      arch_prefix=`get_arch_prefix $ml`
+      # Should check to see if I have already done this
+      copy_linux_headers $sysroot/$arch_prefix
+    fi
+
+    dd=`echo $ml | sed -e 's/;.*$//'`
+    if [ "$dd" = "." ] ; then
+      exec_prefix="/usr"
+    else
+      exec_prefix="/$dd/usr"
+    fi
+    FLAGS=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+    case $FLAGS in
+      *soft-float*) SOFT="--without-fp" ;;
+      *)            SOFT="" ;;
+    esac
+    case $FLAGS in
+      *mips64*) libc_target=`echo $target | sed -e 's/^mips-mti/mips64-mti/' -e 's/^mips-img/mips64-img/'` ;;
+      *) libc_target=$target ;;
+    esac
+
+    export BUILD_CC=gcc
+    export AR=${target}-ar
+    export RANLIB=${target}-ranlib
+    export READELF=${target}-readelf
+    export CC="${target}-gcc $FLAGS"
+    export CXX="${target}-g++ $FLAGS"
+
+    K=`get_linux_ver`
+    bin_sfx=
+    if [ "$sysrootlayout" = "old" ] ; then
+      F=( "--prefix=/usr/fake" "--with-headers=$sysroot/usr/include" )
+    elif [ "$sysrootlayout" = "new" ] ; then
+      F=( "--prefix=/usr" )
+      case $FLAGS in
+	*mabi=32*) bin_sfx=-o32 ;;
+	*mabi=n32*) bin_sfx=-n32 ;;
+	*mabi=64*) bin_sfx=-n64 ;;
+      esac
+    else
+      F=( "--prefix=/usr" "--with-headers=$sysroot/usr/include" )
+    fi
+    F=( "${F[@]}" "--host=$libc_target" )
+    F=( "${F[@]}" "--disable-profile" "--without-gd" "--without-cvs" )
+    F=( "${F[@]}" "--enable-add-ons" "--enable-kernel=4.8.0" )
+    CONFIGURE="$src/configure"
+    MAKE_TARGET_ALL="all"
+    if [ "$sysrootlayout" = "old" ] ; then
+      MAKE_TARGET_INSTALL="install install_root=$sysroot exec_prefix=$exec_prefix prefix=/usr slibdir=/usr/lib inst_slibdir=$sysroot/$exec_prefix/lib libdir=/usr/lib inst_libdir=$sysroot/$exec_prefix/lib rtlddir=/usr/lib inst_rtlddir=$sysroot/$exec_prefix/lib"
+    elif [ "$sysrootlayout" = "new" ] ; then
+      MAKE_TARGET_INSTALL="install install_root=$sysroot/$arch_prefix inst_bindir=$sysroot/$arch_prefix/usr/bin$bin_sfx inst_rootsbindir=$sysroot/$arch_prefix/sbin$bin_sfx inst_sbindir=$sysroot/$arch_prefix/usr/sbin$bin_sfx"
+    else
+      MAKE_TARGET_INSTALL="install install_root=$sysroot"
+      case $target in
+	  i686*-linux-* | x86_64*-linux-*)
+	      MAKE_TARGET_INSTALL="$MAKE_TARGET_INSTALL slibdir=/usr/lib inst_slibdir=$sysroot/$exec_prefix/lib libdir=/usr/lib inst_libdir=$sysroot/$exec_prefix/lib rtlddir=/usr/lib inst_rtlddir=$sysroot/$exec_prefix/lib" ;;
+      esac
+    fi
+    if [ "$SOFT" != "" ] ; then
+	F=( "${F[@]}" "$SOFT" )
+    fi
+    if [ "$extra_config_opts" != "" ] ; then
+	F=( "${F[@]}" "$extra_config_opts" )
+    fi
+    if [ "$make_target_all" = "skip" ] ; then
+	MAKE_TARGET_ALL=""
+    elif [ "$make_target_all" != "" ] ; then
+	MAKE_TARGET_ALL="$make_target_all"
+    fi
+    if [ "$make_target_install" = "skip" ] ; then
+	MAKE_TARGET_INSTALL=""
+    elif [ "$make_target_install" != "" ] ; then
+	MAKE_TARGET_INSTALL="$make_target_install"
+    fi
+    if [ ! -d $build_directory ] ; then
+	do_configure glibc $build_directory $CONFIGURE "${F[@]}"
+        check_return configure $?
+    fi
+    do_make glibc $build_directory "$MAKE_TARGET_ALL"
+    check_return make $?
+    do_make glibc $build_directory "$MAKE_TARGET_INSTALL"
+    check_return make $?
+    if [ "$MAKE_TARGET_INSTALL" != "" ] ; then
+      do_make glibc $build_directory "pdf"
+      check_return make $?
+      mkdir -p $prefix/share/doc/glibc
+      cp $build_directory/manual/libc.pdf $prefix/share/doc/glibc/
+    fi
+
+    unset BUILD_CC AR RANLIB CC CXX
+
+    # We need to reset CC and CXX because we changed them for the uclibc build
+    # and we might build something (gcc, qemu) after building uclibc.
+    if [ "${build32}" = "yes" ] ; then
+        export CC='gcc -march=i486 -m32'
+        export CXX='g++ -march=i486 -m32'
+    fi
+}
+
+# This function builds a single version of the MUSL library for a given
+# set of GCC options (hard-float/soft-float, big-endian/little-endian, etc).
+# Argument 1 is one line from the output of 'gcc --print-multi-libs',
+# this defines what flags to compile MUSL with and what directory to put
+# the libraries into.
+
+function build_one_musl() {
+    ml=$*
+    component=musl
+
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+
+    sysrootlayout=`get_sysroot_layout`
+
+    nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+    libc_subdir="obj_${nn}"
+    if [ "$bld_altdir" = "" ] ; then
+      build_directory=$bld_dir/$component/$libc_subdir
+    else
+      build_directory=$bld_dir/$bld_altdir/$libc_subdir
+    fi
+
+    if [ "$sysrootlayout" = "new" ] ; then
+      arch_prefix=`get_arch_prefix $ml`
+      # Should check to see if I have already done this
+      copy_linux_headers $sysroot/$arch_prefix
+    fi
+
+    dd=`echo $ml | sed -e 's/;.*$//'`
+    if [ "$dd" = "." ] ; then
+      exec_prefix="/usr"
+    else
+      exec_prefix="/$dd/usr"
+    fi
+
+    FLAGS=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+    case $FLAGS in
+      *mips64*) libc_target=`echo $target | sed -e 's/^mips-mti/mips64-mti/' -e 's/^mips-img/mips64-img/'` ;;
+      *) libc_target=$target ;;
+    esac
+
+    export BUILD_CC=gcc
+    export AR=${target}-ar
+    export RANLIB=${target}-ranlib
+    export CC="${target}-gcc $FLAGS"
+    export CXX="${target}-g++ $FLAGS"
+
+    export CFLAGS="-fpic"
+
+    F=( "${F[@]}" "--target=$libc_target" )
+    F=( "${F[@]}" "--disable-wrapper" )
+    F=( "${F[@]}" "--enable-shared" )
+    F=( "${F[@]}" "--syslibdir=$sysroot/$arch_prefix/lib" )
+    F=( "${F[@]}" "--prefix=$sysroot/$arch_prefix/usr" )
+    F=( "${F[@]}" "--includedir=$sysroot/$arch_prefix/usr/include" )
+    F=( "${F[@]}" "--libdir=$sysroot/$arch_prefix/usr/lib" )
+
+    case $target in
+	nanomips*-linux*)
+	    F=( "${F[@]}" "--enable-optimize=string/nanomips/memcpy" );;
+    esac
+
+    CONFIGURE="$src/configure"
+    MAKE_TARGET_ALL="all"
+    MAKE_TARGET_INSTALL="install"
+
+    if [ "$extra_config_opts" != "" ] ; then
+	F=( "${F[@]}" "$extra_config_opts" )
+    fi
+    if [ "$make_target_all" = "skip" ] ; then
+	MAKE_TARGET_ALL=""
+    elif [ "$make_target_all" != "" ] ; then
+	MAKE_TARGET_ALL="$make_target_all"
+    fi
+    if [ "$make_target_install" = "skip" ] ; then
+	MAKE_TARGET_INSTALL=""
+    elif [ "$make_target_install" != "" ] ; then
+	MAKE_TARGET_INSTALL="$make_target_install"
+    fi
+
+    if [ ! -d $build_directory ] ; then
+	do_configure musl $build_directory $CONFIGURE "${F[@]}"
+	check_return configure $?
+    fi
+
+    do_make musl $build_directory "$MAKE_TARGET_ALL"
+    check_return make $?
+    do_make musl $build_directory "$MAKE_TARGET_INSTALL"
+    check_return make $?
+
+    unset BUILD_CC AR RANLIB CC CXX
+
+    # We need to reset CC and CXX because we changed them for the MUSL build
+    # and we might build something (gcc, qemu) after building MUSL.
+    if [ "${build32}" = "yes" ] ; then
+        export CC='gcc -march=i486 -m32'
+        export CXX='g++ -march=i486 -m32'
+    fi
+}
+
+# This function builds all the system libraries (glibc or uclibc) for a
+# multilib enabled GCC.  If building a non-multilib enabled GCC it will
+# build a single version of glibc in whatever the default mode for GCC is.
+# This function takes no arguments.
+
+function build_system_libs() {
+
+    local target_gcc=${target}-gcc
+
+    # As a hack we build the mips64 libraries (n32 and n64) first followed
+    # by the mips32 (o32) libraries.  This ensures that if we build all 3
+    # abi's with the same sysroot (creating /lib, /lib32, and /lib64) that
+    # the executables in /bin and /sbin are built with the o32 abi and will
+    # work on both mips32 and mips64 machines.
+
+    if [ "$grep_multilibs" = "" ] ; then
+	ml_list1=`$target_gcc --print-multi-lib | grep mips64`
+	ml_list2=`$target_gcc --print-multi-lib | grep -v mips64`
+    else
+	ml_list1=`$target_gcc --print-multi-lib | grep mips64 | eval $grep_multilibs`
+	ml_list2=`$target_gcc --print-multi-lib | grep -v mips64 | eval $grep_multilibs`
+    fi
+
+    for ml in $ml_list1 $ml_list2
+    do
+      ml_flags=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+      suffix_tmp=`echo $ml | sed -e "s/\(.*\);.*/\1/"`
+      ml_libgcc=`$target_gcc --print-file-name=libgcc.a $ml_flags`
+      if [ "x${suffix_tmp}" != "x." -a \
+	   "x${ml_libgcc%%${suffix_tmp}/libgcc.a}${suffix_tmp}/libgcc.a" != "x${ml_libgcc}" ]; then
+	# If libgcc was not built (or was found in the default folder
+	# instead of the multilib specific folder suffix then system libs
+	# should not be build
+	continue
+      fi
+      nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+      case "$ml" in
+	*uclibc*) core_lib=uclibc ;;
+	*musl*)   core_lib=musl ;;
+	*)	  core_lib=glibc ;;
+      esac
+      if [ "$core_lib" = "glibc" ] ; then
+	build_one_glibc $ml || exit 1
+      elif [ "$core_lib" = "musl" ] ; then
+	build_one_musl $ml || exit 1
+      else
+	build_one_uclibc $ml || exit 1
+      fi
+    done
+}
+
+# This function checks if a qemu configure option is supported.
+# Argument 1 is the configure file followed by the options
+
+function check_qemu_configure() {
+  configure_file=$1
+  shift
+  while [ $# -ne 0 ]; do
+    grep -e "${1/=*/=\*})" $configure_file 2>/dev/null >/dev/null
+    if [ $? -eq 0 ]; then
+      echo "$1"
+    fi
+    shift
+  done
+}
+
+# This function builds one component.  It uses the component name and the
+# target name to determine how to configure and build the desired component.
+# Argument 1 is the component to build.
+
+function build_component() {
+    local component=$1
+    local build_directory=""
+    local local_build_version=${build_version}
+
+    local MAKE_TARGET_ALL="all"
+    local MAKE_TARGET_INSTALL="install"
+    local CONFIGURE=""
+    local GCC_FLAGS=( "--disable-libmudflap" "--disable-decimal-float" )
+    local MAKE_TARGET_PRE=""
+
+    case $target in
+	mips*)
+		GCC_FLAGS=( "${GCC_FLAGS[@]}" "--with-mips-plt" ) ;;
+    esac
+
+    local F=( )
+    local H=""
+
+    if [ "${component}" = "initial_gcc" ] ; then
+      build_directory="${bld_dir}/${component}"
+      local_build_version=initial
+      component=gcc
+    else
+      build_directory="${bld_dir}/${component}"
+    fi
+
+    if [ "$bld_altdir" != "" ] ; then
+	build_directory="${bld_dir}/${component}"
+    fi
+    if [ "$bld_subdir" != "" ] ; then
+	build_directory="$build_directory/$bld_subdir"
+    fi
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+    CONFIGURE="$src/configure"
+    F=( "${F[@]}" "--prefix=$prefix" )
+    if [ "$disable_multilib" != "" -a "$component" = "gcc" ] ; then
+	F=( "${F[@]}" "$disable_multilib" )
+    fi
+    H=( )
+    if [ "$host" != "" ] ; then
+      H=( "${H[@]}" "--host=$host")
+    fi
+    if [ "$build_triple" != "" ]; then
+      H=( "${H[@]}" "--build=$build_triple")
+    fi
+
+    # Fix the GCC build tree to include other components
+    if [ "$component" = "gcc" ] ; then
+        if [ -d $src_dir/gmp ]; then
+            full_path=`readlink -m $src_dir/gmp`
+            (cd $src; ln -sf $full_path gmp)
+        fi
+        if [ -d $src_dir/mpfr ]; then
+            full_path=`readlink -m $src_dir/mpfr`
+            (cd $src; ln -sf $full_path mpfr)
+        fi
+        if [ -d $src_dir/mpc ]; then
+            full_path=`readlink -m $src_dir/mpc`
+            (cd $src; ln -sf $full_path mpc)
+        fi
+        newlib_s=`find_list_entry newlib "${src_list[@]}"`
+        newlib_src=`find_src $newlib_s ${src_dir} newlib`
+        if [ -d $newlib_src ]; then
+	    full_path=`readlink -m $newlib_src/newlib`
+            (cd $src; ln -sf $full_path newlib)
+	    full_path=`readlink -m $newlib_src/libgloss`
+            (cd $src; ln -sf $full_path libgloss)
+        fi
+        if [ -d $src_dir/dejagnu ]; then
+            full_path=`readlink -m $src_dir/dejagnu`
+            (cd $src; ln -sf $full_path dejagnu)
+	else
+            deja_s=`find_list_entry dejagnu "${src_list[@]}"`
+            deja_src=`find_src $deja_s ${src_dir} dejagnu`
+            if [ -d $deja_src ]; then
+                (cd $src; ln -sf $deja_src dejagnu)
+            fi
+        fi
+    fi
+
+    case $component/$target in
+	binutils/mips*-elf | binutils/nanomips*-elf)
+	    # Serialize for documentation. A bug in the build means the bfd
+	    # docs have to be built before any others can be.
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_PRE="info-bfd"
+	    binutils_install_pdf=""
+	    if [ "$skip_pdfs" = "no" ]; then
+	      binutils_install_pdf="install-pdf-binutils install-pdf-gas install-pdf-ld"
+	    fi
+	    case $target in
+		nanomips*)
+		    MAKE_TARGET_ALL="all-zlib all-binutils all-gas"
+		    MAKE_TARGET_INSTALL="install-binutils install-gas \
+					 $binutils_install_pdf" ;;
+		*)
+		    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld"
+		    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld \
+					 $binutils_install_pdf" ;;
+	    esac
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" ) ;;
+
+	binutils-gas/* )
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_ALL="all-gas"
+	    MAKE_TARGET_INSTALL=""
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" ) ;;
+
+	binutils-ld/* )
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_ALL="all-ld"
+	    MAKE_TARGET_INSTALL=""
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" ) ;;
+
+	binutils-binutils/* )
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_ALL="all-binutils"
+	    MAKE_TARGET_INSTALL=""
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" ) ;;
+
+	gold/mips*-elf | gold/mips*-linux-* | gold/nanomips*-elf | gold/nanomips*-linux*)
+	    # Serialize for documentation. A bug in the build means the bfd
+	    # docs have to be built before any others can be.
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_ALL="all-gold"
+	    MAKE_TARGET_INSTALL="install-gold"
+	    F=( "${F[@]}" "${H[@]}" "--enable-plugins" "--without-gnu-as" )
+	    F=( "${F[@]}"  "--target=$target" "--with-sysroot=$sysroot" )
+	    case $target in
+		nanomips*)
+		    F=( "${F[@]}" "--enable-gold=default" "--enable-threads" ) ;;
+		*)
+		    F=( "${F[@]}" "--enable-gold" );;
+	    esac
+	    ;;
+	binutils/*-linux* | binutils/*-mingw32)
+	    # Serialize for documentation. A bug in the build means the bfd
+	    # docs have to be built before any others can be.
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    MAKE_TARGET_PRE="info-bfd"
+	    binutils_install_pdf=""
+	    if [ "$skip_pdfs" = "no" ]; then
+	      binutils_install_pdf="install-pdf-binutils install-pdf-gas install-pdf-ld install-pdf-gprof"
+	    fi
+	    case $target in
+		nanomips*)
+		    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-gprof"
+		    MAKE_TARGET_INSTALL="install-binutils install-gas install-gprof \
+					 $binutils_install_pdf" ;;
+		*)
+		    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gprof"
+		    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof \
+					 $binutils_install_pdf" ;;
+	    esac
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-sysroot=$sysroot" ) ;;
+	binutils/native)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof" ;;
+	binutils-gdb/mips*-elf)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-sim"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-sim"
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" ) ;;
+	binutils-gdb/mips*-linux-*)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-gprof"
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-sysroot=$sysroot" ) ;;
+	binutils-gdb/native)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-gprof" ;;
+	mingw/*-mingw32)
+	    # Just the headers
+	    MAKE_TARGET_ALL=""
+	    MAKE_TARGET_INSTALL="install"
+	    F=( "${F[@]}" "--host=$target" "--without-crt" ) ;;
+	mingw-w64/*-mingw32)
+	    # The full crt
+	    MAKE_TARGET_ALL=""
+	    MAKE_TARGET_INSTALL="install"
+	    F=( "${F[@]}" "--host=$target" ) ;;
+	gcc/mips*-elf | gcc/nanomips*-elf)
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    # Ugly fix for bison version dependency which only surfaces due to
+	    # time-stamp mismatchs when code is checked out on network file system.
+	    touch $src/intl/plural.c
+	    F=( "${F[@]}" "${H[@]}" "${GCC_FLAGS[@]}" "--target=$target" "--with-newlib" )
+	    F=( "${F[@]}" "--with-gnu-as" "--with-gnu-ld" )
+	    if [ "$local_build_version" = "initial" ] ; then
+		MAKE_TARGET_ALL="all-gcc"
+		MAKE_TARGET_INSTALL="install-gcc"
+		F=( "${F[@]}" "--enable-languages=c,c++" )
+		F=( "${F[@]}" "--without-headers" )
+	    else
+		MAKE_TARGET_ALL="all"
+		if [ "$skip_pdfs" = "no" ]; then
+		  MAKE_TARGET_INSTALL="install install-pdf-gcc install-pdf-target-newlib"
+		else
+		  MAKE_TARGET_INSTALL="install"
+		fi
+		F=( "${F[@]}" "--enable-languages=c,c++" )
+		F=( "${F[@]}" "--with-sysroot=$sysroot" )
+		F=( "${F[@]}" "--with-build-sysroot=$sysroot" )
+		F=( "${F[@]}" "--enable-newlib-long-time_t" )
+		F=( "${F[@]}" "--enable-newlib-io-c99-formats" )
+	    fi ;;
+	gcc/*-w64-mingw32)
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--disable-multilib" )
+	    F=( "${F[@]}" "--enable-version-specific-runtime-libs" )
+	    F=( "${F[@]}" "--with-sysroot=$sysroot" )
+	    F=( "${F[@]}" "--enable-fully-dynamic-string" ) ;;
+	gcc/*-linux-*)
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    F=( "${F[@]}" "${H[@]}" "${GCC_FLAGS[@]}" "--target=$target" )
+	    if [ "$gcc_arch" != "" ] ; then
+		F=( "${F[@]}" "--with-arch=$gcc_arch" )
+	    fi
+	    if [ "$gcc_abi" != "" ] ; then
+		F=( "${F[@]}" "--with-abi=$gcc_abi" )
+	    fi
+	    if [ "$gcc_endian" != "" ] ; then
+		F=( "${F[@]}" "--with-endian=$gcc_endian" )
+	    fi
+	    if [ "$gcc_enable_targets" != "" ] ; then
+		F=( "${F[@]}" "--enable-targets=$gcc_enable_targets" )
+	    fi
+	    if [ "$local_build_version" = "initial" ] ; then
+		MAKE_TARGET_ALL="all-gcc all-target-libgcc inhibit_libc=true"
+		MAKE_TARGET_INSTALL="install-gcc install-target-libgcc"
+		F=( "${F[@]}" "--enable-languages=c" "--without-headers" )
+		F=( "${F[@]}" "--disable-shared" "--disable-threads" )
+		F=( "${F[@]}" "--disable-libquadmath" "--disable-libatomic" )
+		F=( "${F[@]}" "--with-sysroot=$sysroot" )
+		case $target in
+		    i686*-linux-* | x86_64*-linux-*)
+			glibc_version=`grep -e VERSION $src/../glibc/version.h  | grep -Eo '[0-9]+\.[0-9]+'`
+			F=( "${F[@]}" "--disable-multilib" "--with-glibc-version=$glibc_version" ) ;;
+		esac
+	    else
+		MAKE_TARGET_ALL="all"
+		if [ "$skip_pdfs" = "no" ]; then
+		  MAKE_TARGET_INSTALL="install install-pdf-gcc install-pdf-target-libgomp"
+		else
+		  MAKE_TARGET_INSTALL="install"
+		fi
+		F=( "${F[@]}" "--enable-languages=$languages" )
+		case $host:$target in
+		    mips*:mips*)
+			# Candian cross host~=target tools
+			F=( "${F[@]}" "--with-sysroot=/" )
+			F=( "${F[@]}" "--with-build-sysroot=$sysroot" )
+			;;
+		    *)
+			F=( "${F[@]}" "--with-sysroot=$sysroot" )
+			;;
+		esac
+		case $target in
+		    i686*-linux-* | x86_64*-linux-*)
+			# These are CentOS 5 GCC configure options
+			F=( "${F[@]}" "--disable-bootstrap" "--enable-shared" "--enable-threads=posix" )
+			F=( "${F[@]}" "--enable-checking=release" "--enable-__cxa_atexit" )
+			F=( "${F[@]}" "--disable-libunwind-exceptions" "--enable-gnu-unique-object" )
+			F=( "${F[@]}" "--disable-dssi" "--with-tune=generic" "--with-arch_32=i686" )
+		        F=( "${F[@]}" "--disable-multilib" ) ;;
+		    mips*-linux-*)
+			F=( "${F[@]}" "--enable-__cxa_atexit" ) ;;
+		    nanomips*-linux-*)
+			F=( "${F[@]}" "--enable-__cxa_atexit" "--enable-shared" ) ;;
+		esac
+	    fi ;;
+	gcc/native)
+	    MAKE_TARGET_ALL="bootstrap"
+	    F=( "${F[@]}" "--enable-languages=$languages" ) ;;
+	newlib/*)
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" ) ;;
+	gdb-py/*mips*)
+	    F=( "${F[@]}" "--with-python=$prefix/python-root" )
+	    F=( "${F[@]}" "--program-suffix=-py" "--program-prefix=$target-" )
+	    # PYTHONHOME can mess-up execution of specified python
+	    unset PYTHONHOME
+	    case $host in
+		*-*-mingw*)
+		    if [ -f $prefix/python-root/bin/python3.exe ]; then
+			CFLAGS="-I$prefix/python-root/include/python3.7m"
+			CFLAGS="${CFLAGS} -L$prefix/python-root/lib"
+		    else
+			CFLAGS="-I$prefix/python-root/include/python2.7"
+			CFLAGS="${CFLAGS} -L$prefix/python-root/lib/python2.7/config"
+		    fi
+		    CFLAGS="${CFLAGS} -static -Wl,--enable-auto-import"
+		    ;;
+	    esac
+	    skip_pdfs="yes"
+	    # fall-through
+	    ;&
+	gdb/*mips*)
+	    if [ "x$buildlibs" != "x" ]; then
+	      export TEXMFHOME=$buildlibs/share/tex/texmf
+	    fi
+	    MAKE_TARGET_ALL="all-gdb"
+	    if [ "$skip_pdfs" = "no" ]; then
+	      MAKE_TARGET_INSTALL="install-gdb install-sim install-pdf-gdb install-pdf-sim"
+	    else
+	      MAKE_TARGET_INSTALL="install-gdb"
+	    fi
+	    if [ "x$hostlibs" != "x" ]; then
+		F=( "${F[@]}" "--with-libexpat-prefix=$hostlibs" )
+		# Needed for cross compiled environments where ncurses and termcap
+		# libraries are either not available in the sysroot or contain
+		# shared library versions.
+		export LDFLAGS="-L$hostlibs/lib"
+		export CPPFLAGS="-I $hostlibs/include"
+	    fi
+	    F=( "${F[@]}" "${H[@]}" "--disable-libmcheck" "--disable-nls" )
+	    F=( "${F[@]}" "--with-expat" "--target=$target" )
+	    if [ "x$component" != "xgdb-py" ]; then
+		case $target in
+		    mips*-elf | nanomips*-elf)
+			MAKE_TARGET_ALL="$MAKE_TARGET_ALL all-sim"
+			MAKE_TARGET_INSTALL="$MAKE_TARGET_INSTALL install-sim"
+			;;
+		esac
+		F=( "${F[@]}" "--without-python" )
+	    fi
+	    ;;
+	gdb/native)
+	    MAKE_TARGET_ALL="all-gdb"
+	    MAKE_TARGET_INSTALL="install-gdb" ;;
+	qemu/*)
+	    # Need disable-werror because linux-user/signal.c has
+	    # #warning lines about signal handling not implemented
+	    # for n32, n64 ABIs.
+	    export PKG_CONFIG_PATH=$hostlibs/lib/pkgconfig/
+	    T=( "--disable-tools" "--disable-werror" )
+	    T=( "${T[@]}" "--disable-smartcard-nss" "--disable-smartcard" )
+	    T=( "${T[@]}" "--disable-pie" "--disable-vnc" "--disable-curses" )
+	    T=( "${T[@]}" "--disable-virtfs" "--disable-sdl" "--disable-gtk" )
+	    T=( "${T[@]}" "--disable-libssh2" "--disable-curl" "--disable-bluez" )
+	    T=( "${T[@]}" "--disable-bzip2" "--disable-libxml2" )
+	    T=( "${T[@]}" "--disable-vhost-user" )
+	    if [ -f $hostlibs/bin/python ]; then
+		T=( "${T[@]}" "--python=$hostlibs/bin/python" )
+	    elif [ -f $prefix/python-root/bin/python ]; then
+		T=( "${T[@]}" "--python=$prefix/python-root/bin/python" )
+	    else
+		T=( "${T[@]}" "--python=/mips/tools/sweng/freeware/python/2.7.13/Linux/bin/python" )
+	    fi
+	    T=( `check_qemu_configure "$CONFIGURE" "${T[@]}"` )
+	    if [ "x$hostlibs" != "x" ]; then
+	      F=( "${F[@]}" "${T[@]}" "--extra-ldflags=-L$hostlibs/lib" "--extra-cflags=-I$hostlibs/include"  )
+	    fi
+	    if [ "$host" != "" ]; then
+	      # Override libtool and pkg-config as we don't tend to have
+	      # cross-prefix versions of these.
+	      export LIBTOOL=libtool
+	      export PKG_CONFIG=pkg-config
+	      F=( "${F[@]}" "--static" "--cross-prefix=${host}-" )
+	    fi
+	    case $target/$host in
+		nanomips*-linux*/*-pc-linux-gnu)
+		    F=( "${F[@]}" "--target-list=nanomips-linux-user,nanomips-softmmu" )
+		    ;;
+		nanomips*/*)
+		    F=( "${F[@]}" "--target-list=nanomips-softmmu" )
+		    ;;
+		mips*-linux*/*-pc-linux-gnu)
+		    F=( "${F[@]}" "--target-list=mips-linux-user,mipsel-linux-user,mipsn32-linux-user,mipsn32el-linux-user,mips64-linux-user,mips64el-linux-user,mipsel-softmmu,mips-softmmu,mips64el-softmmu,mips64-softmmu" )
+		    ;;
+		mips*/*)
+		    F=( "${F[@]}" "--target-list=mipsel-softmmu,mips-softmmu,mips64el-softmmu,mips64-softmmu" )
+		    ;;
+		x86*/*)
+		    F=( "${F[@]}" "--target-list=i386-softmmu,x86_64-softmmu,i386-linux-user,x86_64-linux-user" )
+		    ;;
+	    esac
+	    case $host in
+		*-*-mingw*)
+		    # QEMU configure scripts mess up installation for MINGW builds.
+		    # Force the installation paths to match Linux
+		    F=( "${F[@]}" "--mandir=${prefix}/share/man" )
+		    F=( "${F[@]}" "--datadir=${prefix}/share" )
+		    F=( "${F[@]}" "--docdir=${prefix}/share/doc/qemu" )
+		    F=( "${F[@]}" "--bindir=${prefix}/bin" )
+		    ;;
+		*-pc-linux-gnu)
+		    F=( "${F[@]}" "--audio-drv-list=oss" )
+		    ;;
+	    esac
+	    ;;
+	expat/*)
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--disable-nls" ) ;;
+	ncurses/*)
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--disable-nls" )
+	    F=( "${F[@]}" "--with-terminfo-dirs=/usr/share/terminfo" )
+	    F=( "${F[@]}" "--without-ada" "--without-tests" "--without-progs" ) ;;
+	termcap/*)
+	    F=( "${F[@]}" "--disable-shared" "--disable-nls" )
+	    MAKE_TARGET_INSTALL="install oldincludedir=" ;;
+	pixman/*)
+	    F=( "${F[@]}" "${H[@]}" "--disable-libpng" "--disable-shared" "--enable-static" ) ;;
+	glib/*)
+	    case $host in
+		*-*-mingw*)
+		    CFLAGS="$CFLAGS -Wl,--enable-auto-import -lucrt"
+		    ;;
+	    esac
+	    if [ "x$hostlibs" != "x" ]; then
+		export PKG_CONFIG_PATH=$hostlibs/lib/pkgconfig/
+		# Some libraries are not picked up via pkgconfig so add the host
+		# library and include paths manually as well
+		export CFLAGS="$CFLAGS -I$hostlibs/include"
+		export LDFLAGS="$CFLAGS -L$hostlibs/lib"
+		export CPPFLAGS="$CFLAGS"
+	    fi
+
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--enable-static" )
+	    F=( "${F[@]}" "--with-pcre=internal" "--disable-compile-warnings" )
+	    F=( "${F[@]}" "--disable-always-build-tests" "--with-libiconv=gnu" ) ;;
+	smallclib/*)
+	    CONFIGURE=cmake
+	    F=( "-DCMAKE_SYSTEM_NAME=$target" )
+	    F=( "${F[@]}" "-DCMAKE_TOOLCHAIN_FILE=$src/toolchains/ToolChainMIPS.cmake" )
+	    F=( "${F[@]}" "-DCMAKE_INSTALL_PREFIX=$prefix" "$src" )
+	    case $target in
+	      nanomips*-elf)
+		F=( "${F[@]}" "-DMULTILIB_BUILDLIST=$src/ml-nano-elf" ) ;;
+	      *-mti-elf)
+		F=( "${F[@]}" "-DMULTILIB_BUILDLIST=$src/ml-mti-elf" ) ;;
+	      *-img-elf)
+		F=( "${F[@]}" "-DMULTILIB_BUILDLIST=$src/ml-img-elf" ) ;;
+	    esac ;;
+	gettext/*)
+	    export CPPFLAGS=-DLIBXML_STATIC
+	    F=( "${F[@]}" "${H[@]}" "--without-libxml2-prefix" "--disable-shared" )
+	    F=( "${F[@]}" "--enable-static" "--disable-threads" );;
+	libiconv/*)
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--enable-static" ) ;;
+	libffi/*)
+	    F=( "${F[@]}" "${H[@]}" "--enable-shared" "--enable-static" )
+	    F=(  "${F[@]}" "--libdir=$prefix/lib" ) ;;
+	openssl/*)
+	    CONFIGURE=$src/Configure
+	    F=( "${F[@]}" "--cross-compile-prefix="$host"-" )
+	    case $host in
+		x86_64*-linux-*)
+		    F=( "linux-x86_64" "${F[@]}" ) ;;
+		i686*-linux-*)
+		    F=( "linux-x86" "${F[@]}" ) ;;
+		x86_64-w64-mingw32)
+		    F=( "mingw64" "${F[@]}" ) ;;
+		i686-w64-mingw32)
+		    F=( "mingw" "${F[@]}" ) ;;
+	    esac ;;
+	texinfo/*)
+	    MAKE_TARGET_INSTALL="TEXMF=$prefix/share/tex/texmf install install-tex" ;;
+	zlib/*)
+	    case $host in
+		*-*-mingw*)
+		    # Easier to build for mingw using cmake
+		    CONFIGURE=cmake
+		    F=( "-DCMAKE_SYSTEM_NAME=$host" )
+		    F=( "${F[@]}" "-DCMAKE_C_COMPILER=${host}-gcc" )
+		    F=( "${F[@]}" "-DCMAKE_RC_COMPILER=${host}-windres" )
+		    F=( "${F[@]}" "-DBUILD_SHARED_LIBS=FALSE" "-DUNIX=1" )
+		    F=( "${F[@]}" "-DCMAKE_INSTALL_PREFIX=$prefix" "$src" )
+		    ;;
+		*)
+		    if [ ! -d $build_directory ]; then
+			cp -r $src $build_directory
+			rm -f $build_directory/Makefile
+		    fi
+		    CONFIGURE="$build_directory/configure"
+		    if [ "$host" != "" ]; then
+			export CHOST="${host}"
+		    fi
+		    F=( "${F[@]}" "--uname=GNU" )
+		    ;;
+	    esac
+	    ;;
+	gmp/*|mpfr/*|mpc/*)
+	    CONFIGURE=""
+	    MAKE_TARGET_ALL=""
+	    MAKE_TARGET_INSTALL="" ;;
+	bison/*)
+	;;
+	python/*|Python/*)
+	    F=( "${F[@]}" "${H[@]}" "--without-ensurepip" "--disable-shared" )
+	    cc=$host"-gcc"
+	    troot=`dirname \`which $cc\``/..
+	    if [ "x$hostlibs" != "x" ]; then
+		export LDFLAGS="-L$hostlibs/lib"
+		case $host in
+		    *-*-mingw*)
+			pyver=`grep -e "^VERSION=\([0-9]\)" -o $src/configure | cut -d= -f 2`
+			if [ "x$pyver" = "x3" ]; then
+			    F=( "${F[@]}" --with-libs="-lversion -lintl -liconv -lshlwapi -lwsock32 -lwinpthread" )
+			fi
+			CFLAGS="-I $hostlibs/include -static-libgcc"
+			export CFLAGS="${CFLAGS} -static-libstdc++ -Wl,--enable-auto-import"
+			if [ $host = "i686-w64-mingw32" ]; then
+			    export LDFLAGS="${LDFLAGS}  -L$troot/mingw/lib -L$troot/lib/gcc/i686-w64-mingw32/lib/"
+			else
+			    export LDFLAGS="${LDFLAGS}  -L$troot/mingw/lib -L$troot/lib/gcc/x86_64-w64-mingw32/lib/"
+			fi
+			;;
+		    *)
+			export CFLAGS="-I $hostlibs/include"
+			export LDFLAGS="-L$hostlibs/lib -Wl,-rpath=$hostlibs/lib"
+			;;
+		esac
+	       export CXXFLAGS="$CFLAGS"
+	    fi
+ 	    ;;
+	make/*)
+	    F=( "${F[@]}" "--without-guile")
+	    ;;
+        llvm/*|clang/*|llvm_multilibs/*)
+            SCRIPT_DIR=$(cd $(dirname "$BASH_SOURCE") && pwd)
+            source "${SCRIPT_DIR}/llvm_utils"
+
+            build_llvm_component $component $target
+            check_return build_llvm_component $?
+            return ;;
+	*)
+	    echo "Bad build component/target ($component/$target)"; exit 1 ;;
+    esac
+    if [ "$extra_config_opts" != "" ] ; then
+	F=( "${F[@]}" $extra_config_opts )
+    fi
+    if [ "$make_target_all" = "skip" ] ; then
+	MAKE_TARGET_ALL=""
+    elif [ "$make_target_all" != "" ] ; then
+	MAKE_TARGET_ALL="$make_target_all"
+    fi
+    if [ "$make_target_install" = "skip" ] ; then
+	MAKE_TARGET_INSTALL=""
+    elif [ "$make_target_install" != "" ] ; then
+	MAKE_TARGET_INSTALL="$make_target_install"
+    fi
+    do_configure $component $build_directory "$CONFIGURE" "${F[@]}"
+    check_return configure $?
+    if [ "x$MAKE_TARGET_PRE" != "x" ]; then
+      do_make $component $build_directory "--jobs 1 $MAKE_TARGET_PRE"
+      check_return make $?
+    fi
+    do_make $component $build_directory "$MAKE_TARGET_ALL"
+    check_return make $?
+    do_make $component $build_directory "$MAKE_TARGET_INSTALL"
+    check_return make $?
+
+    case $component/$target in
+	gdb/mips*)
+	  rm -f $prefix/share/doc/annotate.pdf
+	  rm -f $prefix/share/doc/stabs.pdf
+	  ;;
+	make/*)
+	  ln -sf $prefix/bin/make $prefix/bin/gmake
+	  ;;
+	gdb-py/mips*)
+	  rm -f $prefix/bin/$target"-gdb-add-index-py"
+	  ;;
+    esac
+    case $component/$host in
+	libffi/x86_64-pc-linux-gnu)
+	  ln -sf ../lib64/libffi.so $prefix/lib/libffi.so
+	  ln -sf ../lib64/libffi.so.6 $prefix/lib/libffi.so.6
+	  ;;
+    esac
+}
+
+# This function checks one component.  Currently we only support running
+# check on the GCC component.
+# Argument 1 is the component to build.
+
+
+function check_component() {
+    c=$1
+    if [ "$bld_altdir" = "" ] ; then
+	bld_c="$c"
+    else
+	bld_c="$bld_altdir"
+    fi
+    MAKE_TARGET_CHECK="check"
+    if [ "$make_target_check" = "skip" ] ; then
+	MAKE_TARGET_CHECK=""
+    elif [ "$make_target_check" != "" ] ; then
+	MAKE_TARGET_CHECK="$make_target_check"
+    fi
+    if [ "$runtestflags" = "" ] ; then
+	if [ "$dejagnu_baseboard" != "" ] ; then
+		runtestflags="--target_board=$dejagnu_baseboard"
+	fi
+    else
+	if [ "$dejagnu_baseboard" != "" ] ; then
+		echo "Error: Both runtestflags and dejagnu_baseboard are set"
+		exit 1
+	fi
+    fi
+
+   if [ "$dejagnu_sim" != "" ] ; then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM=\"$dejagnu_sim\""
+	fi
+	export DEJAGNU_SIM="$dejagnu_sim"
+   fi
+
+    if [ "$dejagnu_sim_options" != "" ] ; then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_OPTIONS=\"$dejagnu_sim_options\""
+	fi
+	export DEJAGNU_SIM_OPTIONS="$dejagnu_sim_options"
+    fi
+
+    if [ "$dejagnu_sim_link_flags" != "" ]
+    then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_LINK_FLAGS=\"$dejagnu_sim_link_flags\""
+	fi
+	export DEJAGNU_SIM_LINK_FLAGS="$dejagnu_sim_link_flags"
+    fi
+
+    if [ "$dejagnu_sim_ldscript" != "" ]
+    then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_LDSCRIPT=\"$dejagnu_sim_ldscript\""
+	fi
+	export DEJAGNU_SIM_LDSCRIPT="$dejagnu_sim_ldscript"
+    fi
+
+    if [ "$bld_subdir" != "" ] ; then
+        cdir=$bld_dir/$bld_c/$bld_subdir
+    else
+	cdir=$bld_dir/$bld_c
+    fi
+    cd $cdir
+    if [ "$MAKE_TARGET_CHECK" != "" ] ; then
+	if [ "$runtestflags" != "" ] ; then
+	    export RUNTESTFLAGS="$runtestflags"
+	fi
+	do_make $c $cdir "-k $MAKE_TARGET_CHECK"
+    fi
+}
+
+# Begin the main body of build_toolchain.  The first argument passed
+# in to build_toolchain should be an action (update, build, or check),
+# followed by a string of options (see parse_args for a list of options)
+# and finally one or more components to be built (gcc, binutils-gdb, etc)
+
+if [ $# -eq 0 ] ; then
+    echo "Error No action was specified."
+    exit 1
+else
+    action=$1
+    shift 1
+
+    parse_args "$@"
+
+    if [ "$components" = "" ] ; then
+	echo "Error: No component was specified."
+	exit 1
+    fi
+    if [ ! -d $bld_dir ] ; then
+	if [ "$preview" != "yes" ] ; then
+	    mkdir $bld_dir
+	fi
+    fi
+
+    if [ "${build32}" = "yes" ] ; then
+	export CC='gcc -march=i486 -m32'
+	export CXX='g++ -march=i486 -m32'
+	export AS='as -march=i486 --32'
+    fi
+    if [ "$action" = "update" ] ; then
+	for i in $components
+	do
+	    s=`find_list_entry $i "${src_list[@]}"`
+	    check_src $s ${src_dir} $i
+	    update_src $s ${src_dir} $i || exit 1
+	done
+    elif [ "$action" = "build" ] ; then
+	for i in $components
+	do
+	    case $i in
+		gmp|mpfr|mpc|expat|termcap|ncurses|zlib|pixman|glib|libffi|libiconv|gettext|texinfo|binutils|binutils-gdb|binutils-binutils|binutils-gas|binutils-ld|initial_gcc|gcc|gold|newlib|smallclib|gdb|qemu|mingw|mingw-w64|llvm|llvm_multilibs|lldb_server|bison|Python|make|gdb-py|python|openssl)
+		    build_component $i ;;
+		glibc|glibc_multilibs|uclibc|uclibc_multilibs|musl|musl_multilibs|sysroot)
+		    build_system_libs ;;
+		linux|linux_headers)
+		    build_linux_headers ;;
+		*)
+		    echo "Do not know how to build component $i."
+		    exit 1 ;;
+	    esac
+	done
+    elif [ "$action" = "check" ] ; then
+	for i in $components
+	do
+	    case $i in
+		gcc)
+		    check_component $i
+		    # Do not return an error code due to test failures.
+		    exit 0 ;;
+		*)
+		    echo "Do not know how to check component $i."
+		    exit 1 ;;
+	    esac
+	done
+    else
+	echo "Error: Action $i is not understood"
+	exit 1
+    fi
+fi

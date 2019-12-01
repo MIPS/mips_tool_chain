@@ -1,0 +1,24 @@
+#!/bin/bash
+
+wdr=$(readlink -f `dirname "$0"`)
+. ${wdr}/buildrc
+
+all_args="$@"
+parse_args "$@"
+
+if [ "$components" = "" ] ; then
+	echo "Error: No component was specified for testing."
+	exit 1
+fi
+
+for i in $components
+do
+    case $i in 
+	gcc)
+	    check_component $i
+	    # Do not return an error code due to test failures.
+	    exit 0 ;;
+	*)
+	    echo "Error: Do not know how to check component $i" ; exit 1 ;;
+    esac
+done

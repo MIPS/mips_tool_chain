@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# Use this script to copy the target files from one install area
+# to another in order to seed a canadian cross compiler without
+# having to rebuild target files
+
+if [ $# -ne 3 ]; then
+  echo "Usage: copy_cross_target <TRIPLE> <ref_folder> <cross_folder>"
+  exit 1;
+fi
+
+TRIPLE=$1
+REF_FOLDER=$2
+CROSS_FOLDER=$3
+
+set -e
+if [ ! -d $REF_FOLDER ]; then
+  echo "Missing reference folder $REF_FOLDER"
+  exit 1
+fi
+if [ ! -d $REF_FOLDER/$TRIPLE ]; then
+  echo "Missing target files $REF_FOLDER/$TRIPLE"
+  exit 1
+fi
+
+mkdir -p $CROSS_FOLDER/$TRIPLE
+cp -vr $REF_FOLDER/$TRIPLE/lib $CROSS_FOLDER/$TRIPLE/
+cp -vr $REF_FOLDER/$TRIPLE/include $CROSS_FOLDER/$TRIPLE/
+mkdir -p $CROSS_FOLDER/lib/gcc/$TRIPLE
+cp -vr $REF_FOLDER/lib/gcc/$TRIPLE/* $CROSS_FOLDER/lib/gcc/$TRIPLE/
+mkdir -p $CROSS_FOLDER/share
+cp -vr $REF_FOLDER/share/info $CROSS_FOLDER/share/
+cp -vr $REF_FOLDER/share/locale $CROSS_FOLDER/share/
+cp -vr $REF_FOLDER/share/gcc-* $CROSS_FOLDER/share/
+cp -vr $REF_FOLDER/share/doc $CROSS_FOLDER/share/
+
+case $TRIPLE in
+  *-linux-*)
+    cp -Lvr $REF_FOLDER/sysroot $CROSS_FOLDER/;;
+  *-elf)
+    cp -Lvr $REF_FOLDER/share/mips $CROSS_FOLDER/share/;;
+esac

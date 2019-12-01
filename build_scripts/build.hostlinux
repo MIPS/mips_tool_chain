@@ -1,0 +1,34 @@
+# This script builds cross compilers to target mingw
+# Targets supported: x86_64-pc-linux-gnu (with multilibs)
+# binutils 2.25 and gcc 4.9.2|5.3|trunk are normally used
+
+TOPDIR=/directory
+GITHOME=ssh://git@github.com/MIPS
+TARGET=x86_64-pc-linux-gnu
+INSTALL=$TOPDIR/install-$TARGET
+HOSTINSTALL=$TOPDIR/install-host
+OBJ=$TOPDIR/obj-$TARGET
+SYSROOT=$INSTALL/sysroot
+
+cd $TOPDIR
+
+G="--path=$INSTALL/bin --git_home=$GITHOME"
+G="$G --build=$OBJ --prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT --jobs=3"
+
+# If you want to force an update of your sources before the build.
+# uncommment the next line.
+# b/build_toolchain update $G binutils expat gdb glibc gcc qemu
+
+# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# uncomment the next line.
+#b/build_toolchain update $G gmp mpfr mpc
+
+# You can build these with a single run and listing all targets (in order)
+# they are listed seperately in order to make it easier to build/rebuild a
+# single component.
+
+b/build_toolchain build $G binutils || exit 1
+b/build_toolchain build $G initial_gcc || exit 1
+b/build_toolchain build $G linux_headers || exit 1
+b/build_toolchain build $G sysroot || exit 1
+b/build_toolchain build $G gcc || exit 1

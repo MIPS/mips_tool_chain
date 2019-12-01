@@ -1,0 +1,31 @@
+diff -Nru reed-gcc-4.4.6//gcc/config/mips/mti-linux.h don-gcc-4.4.6//gcc/config/mips/mti-linux.h
+--- reed-gcc-4.4.6//gcc/config/mips/mti-linux.h	1969-12-31 16:00:00.000000000 -0800
++++ don-gcc-4.4.6//gcc/config/mips/mti-linux.h	2011-09-12 11:57:37.000000000 -0700
+@@ -0,0 +1,7 @@
++#undef MULTILIB_DEFAULTS
++#define MULTILIB_DEFAULTS \
++  { "EB" }
++
++#undef SYSROOT_SUFFIX_SPEC
++#define SYSROOT_SUFFIX_SPEC \
++  "%{mel|EL:/el}%{msoft-float:/soft-float}%{mips32:/mips32}"
+diff -Nru reed-gcc-4.4.6//gcc/config/mips/t-mti-linux don-gcc-4.4.6//gcc/config/mips/t-mti-linux
+--- reed-gcc-4.4.6//gcc/config/mips/t-mti-linux	1969-12-31 16:00:00.000000000 -0800
++++ don-gcc-4.4.6//gcc/config/mips/t-mti-linux	2011-09-12 11:57:37.000000000 -0700
+@@ -0,0 +1,4 @@
++MULTILIB_OPTIONS = EL/EB msoft-float mips32
++MULTILIB_DIRNAMES = el eb soft-float mips32
++MULTILIB_MATCHES := EL=mel EB=meb
++EXTRA_MULTILIB_PARTS = crtbegin.o crtend.o crtbeginS.o crtendS.o crtbeginT.o
+diff -Nru reed-gcc-4.4.6//gcc/config.gcc don-gcc-4.4.6//gcc/config.gcc
+--- reed-gcc-4.4.6//gcc/config.gcc	2011-02-18 13:39:51.000000000 -0800
++++ don-gcc-4.4.6//gcc/config.gcc	2011-09-12 11:56:51.000000000 -0700
+@@ -1600,6 +1600,8 @@
+         mipsisa32*)
+ 		tm_defines="${tm_defines} MIPS_ISA_DEFAULT=32"
+         esac
++	tmake_file="${tmake_file} mips/t-mti-linux"
++        tm_file="${tm_file} mips/mti-linux.h"
+ 	test x$with_llsc != x || with_llsc=yes
+ 	;;
+ mips*-*-openbsd*)

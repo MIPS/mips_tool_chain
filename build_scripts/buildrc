@@ -1,0 +1,1229 @@
+
+prefix="$PREFIX"
+build_prefix="$BUILD_PREFIX"
+bld_dir="obj"
+bld_subdir=""
+bld_altdir=""
+src_dir="src"
+host="$HOST"
+hostlibs=""
+target="$TARGET"
+components=""
+jobs=1
+dejagnu_sim="$DEJAGNU_SIM"
+dejagnu_sim_options="$DEJAGNU_SIM_OPTIONS"
+dejagnu_sim_link_flags="$DEJAGNU_SIM_LINK_FLAGS"
+dejagnu_sim_ldscript="$DEJAGNU_SIM_LDSCRIPT"
+dejagnu_remote="$DEJAGNU_REMOTE"
+dejagnu_baseboard="$DEJAGNU_BASEBOARD"
+extra_config_opts=""
+make_target_all=""
+make_target_install=""
+make_target_check=""
+runtestflags=""
+build_version=""
+disable_multilib=""
+preview="no"
+git_home="$GIT_HOME"
+gcc_branch=""
+languages="c,c++"
+grep_multilibs=""
+localgit="no"
+build32="no"
+bugurl=""
+pkgversion=""
+sysrootlayout=""
+gcc_arch=""
+gcc_abi=""
+gcc_endian=""
+gcc_enable_targets=""
+
+src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
+	    "gdb:binutils-gdb" "binutils-gdb" "gcc" "qemu" "uclibc" \
+	    "gmp:packages" "mpfr:packages" "mpc:packages" "linux:packages" \
+	    "expat:packages" "termcap:packages" "ncurses:packages" )
+
+src_list=( )
+src_arglist=( )
+branch_list=( )
+branch_arglist=( )
+patch_arglist=( )
+version_arglist=( )
+
+# Searches for the first argument within the list that follows.
+# value=`find_list_entry "gcc" "foo:bar" "gcc:moo"` would return 'moo'.
+# If the argument is not found then we return an empty string.
+
+function find_list_entry() {
+  local needle="$1"
+  shift
+  while [ $# -ne 0 ]; do
+    if [ "x$needle" = "x${1%%:*}" ]; then
+      echo "${1#*:}"
+      break;
+    fi
+    shift
+  done
+  # Did not find it
+  echo ""
+}
+
+# Set up the src_list and branch_list variables to contain the locations
+# and branches of the various sources being used.  The sources used can
+# be affected by the --git_home, --src, and --branch options.
+
+function init_default_src() {
+
+    if [ "${git_home}" = "" ] ; then
+	# For read-only checkouts use: --git_home="https://github.com/MIPS"
+	git_home="ssh://git@github.com/MIPS"
+    fi
+
+    for src in "${src_repos[@]}"; do
+	srcname="${src%%:*}"
+	srcrepo="${src#*:}"
+
+	repoarg=`find_list_entry "${srcname}" "${src_arglist[@]}"`
+	if [ "${repoarg}" = "" ]; then
+	    if [ "${srcrepo}" = "${srcrepo/:}" ] ; then
+		repo_entry="${srcname}:${git_home}/${srcrepo}.git"
+	    else
+		repo_entry="${srcname}:${srcrepo}"
+	    fi
+	    src_list=( "${src_list[@]}" "${repo_entry}" )
+	else
+	    repo_entry="${srcname}:${repoarg}"
+	    src_list=( "${src_list[@]}" "${repo_entry}" )
+	fi
+
+	brancharg=`find_list_entry "${srcname}" "${branch_arglist[@]}"`
+	if [ "${brancharg}" = "" ]; then
+	    brancharg=`find_list_entry "all" "${branch_arglist[@]}"`
+	    if [ "${brancharg}" = "" ]; then
+		branch_list=( "${branch_list[@]}" "${srcname}:master" )
+	    else
+		branch_list=( "${branch_list[@]}" "${srcname}:${brancharg}" )
+	    fi
+	else
+	    branch_list=( "${branch_list[@]}" "${srcname}:${brancharg}" )
+	fi
+    done
+}
+
+# Parse the various arguments that can be passed in to build_toolchain.
+# These include:
+
+function parse_args() {
+    local prg=`basename "$0"`
+    # If "$prg" is not added before "$@"on the getopt call,
+    # the first option is ignored.
+    local opts=`getopt --name "$prg" --longoptions host:,hostlibs:,target:,sysroot:,prefix:,path:,build:,build_subdir:,build_altdir:,source:,jobs:,src:,branch:,patch:,version:,dejagnu_sim:,dejagnu_sim_options:,dejagnu_sim_link_flags:,dejagnu_sim_ldscript:,dejagnu_remote:,dejagnu_baseboard:,extra_config_opts:,make_target_all:,make_target_install:,make_target_check:,runtestflags:,build_version:,git_home:,gcc_branch:,languages:,with-bugurl:,with-pkgversion:,grep_multilibs:,sysrootlayout:,with-arch:,with-abi:,with-endian:,enable-targets:,disable-multilib,preview,localgit,32bit-build -- "$prg" "$@"`
+    eval set -- "$opts"
+    while true ; do
+        case "$1" in
+	    --path) PATH="$2:$PATH" ; shift 2 ;;
+	    --host) host="$2" ; shift 2 ;;
+	    --hostlibs) hostlibs="$2" ; shift 2 ;;
+	    --target) target="$2" ; shift 2 ;;
+            --sysroot) sysroot="$2" ; shift 2 ;;
+	    --prefix) prefix="$2" ; shift 2 ;;
+	    --build) bld_dir="$2" ; shift 2 ;;
+	    --build_subdir) bld_subdir="$2" ; shift 2 ;;
+	    --build_altdir) bld_altdir="$2" ; shift 2 ;;
+	    --source) src_dir="$2" ; shift 2 ;;
+	    --jobs) jobs=$2; shift 2 ;;
+	    --dejagnu_sim) dejagnu_sim="$2" ; shift 2 ;;
+	    --dejagnu_sim_options) dejagnu_sim_options="$2" ; shift 2 ;;
+	    --dejagnu_sim_link_flags) dejagnu_sim_link_flags="$2" ; shift 2 ;;
+	    --dejagnu_sim_ldscript) dejagnu_sim_ldscript="$2" ; shift 2 ;;
+	    --dejagnu_remote) dejagnu_remote="$2" ; shift 2 ;;
+	    --dejagnu_baseboard) dejagnu_baseboard="$2" ; shift 2 ;;
+	    --extra_config_opts) extra_config_opts="$2" ; shift 2 ;;
+	    --make_target_all) make_target_all="$2" ; shift 2;;
+	    --make_target_install) make_target_install="$2" ; shift 2;;
+	    --make_target_check) make_target_check="$2" ; shift 2;;
+	    --runtestflags) runtestflags="$2" ; shift 2;;
+	    --src) src_arglist=( "$2" "${src_arglist[@]}" ) ; shift 2 ;;
+	    --branch) branch_arglist=( "$2" "${branch_arglist[@]}" ) ; shift 2 ;;
+	    --patch) patch_arglist=( "$2" "${patch_arglist[@]}" ) ; shift 2 ;;
+	    --version) version_arglist=( "$2" "${version_arglist[@]}" ) ; shift 2 ;;
+            --build_version) build_version="$2" ; shift 2 ;;
+	    --git_home) git_home="$2" ; shift 2 ;;
+	    --gcc_branch) gcc_branch="$2" ; shift 2 ;;
+	    --languages) languages="$2" ; shift 2 ;;
+	    --with-bugurl) bugurl="$2" ; shift 2 ;;
+	    --with-pkgversion) pkgversion="$2" ; shift 2 ;;
+	    --grep_multilibs) grep_multilibs="$2" ; shift 2 ;;
+	    --sysrootlayout) sysrootlayout="$2" ; shift 2 ;;
+	    --with-arch) gcc_arch="$2" ; shift 2 ;;
+	    --with-abi) gcc_abi="$2" ; shift 2 ;;
+	    --with-endian) gcc_endian="$2" ; shift 2 ;;
+	    --enable-targets) gcc_enable_targets="$2" ; shift 2 ;;
+	    --disable-multilib) disable_multilib="$1" ; shift 1 ;;
+	    --preview) preview="yes" ; shift 1 ;;
+	    --localgit) localgit="yes" ; shift 1 ;;
+	    --32bit-build) build32="yes" ; shift 1 ;;
+	    --) shift ; break ;;
+	    *) echo "Error: Cannot parse command line" >&2 ; exit 1 ;;
+        esac
+    done
+
+    components="$@"
+
+    init_default_src
+
+    if [ "$target" = "" ] ; then
+	target=mips-linux-gnu
+    fi
+    if [ "$prefix" = "" ]; then
+	prefix=install
+    fi
+    if [ "$build_prefix" = "" ]; then
+	if [ "$target" = "native" ] ; then
+	    build_prefix=install
+	else
+	    build_prefix=build-install
+	fi
+    fi
+    prefix=$(readlink -m $prefix)
+    build_prefix=$(readlink -m $build_prefix)
+
+    arch=`echo $target | sed 's/-.*$//'`
+    case $arch in
+      mips*) arch="mips" ;;
+    esac
+
+    if [ "$sysroot" = "" ] ; then
+      case $target in
+	*elf) sysroot=$prefix/$target ;;
+	*linux-gnu) sysroot=$prefix/sysroot ;;
+      esac
+    fi
+
+    # Set default kernel version.  If the user specified a version it will
+    # come at the beginning of the list and override these defaults.  We
+    # could set defaults for other components that are in packages.git too.
+    # versions are only used for things stored in packages.git.
+
+    case $target in
+	mips*mti*) version_arglist=( "$version_arglist" "linux:4.0" ) ;;
+	mips*img*) version_arglist=( "$version_arglist" "linux:4.0" ) ;;
+	mips*) version_arglist=( "$version_arglist" "linux:4.0" ) ;;
+    esac
+
+    if [ "$bld_dir" != "" ]; then
+      bld_dir=$(readlink -m $bld_dir)
+    fi
+
+    PATH=$PATH:$prefix/bin
+}
+
+# If any patches were specified in the argument list, then apply
+# them to the relavent sources.  This is done when the sources
+# are initially downloaded/installed.  After a source tree is in
+# place, we assume it has been patched and do not try to patch
+# it again.
+
+# If the component is "gcc" we also run 'contrib/gcc_update', this
+# script touches certain fails to reset the date stamp on them and
+# avoid unneeded reconfigures and rebuilds on newly downloaded
+# sources.
+
+function update_src_and_apply_patches () {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+
+    if [ ! -d $src_dir/$name ] ; then
+	echo "Error: Source directory $src_dir/$name does not exist."
+	exit 1
+    fi
+
+    for i in "${patch_arglist[@]}"
+    do
+	n=${i%%:*}
+	p=${i#*:}
+	if [ "$n" = "$name" ] ; then
+	    b=`basename $p`
+	    if [ ! -f $src_dir/$b ] ; then
+		(cd $src_dir; wget -t 10 -nv $p)
+	    fi
+	    p=$src_dir/$b
+	    if [ -f $p ] ; then
+		(cd $src_dir/$name; patch -t -p 1 < $p)
+		if [ $? -ne 0 ] ; then
+		    echo "Error: Patch ($b) failed"
+		    exit 1
+		fi
+	    fi
+	fi
+    done
+
+    if [ "$name" = "gcc" ] ; then
+	(cd $src_dir/$name; contrib/gcc_update --touch)
+    fi
+    if [ "$name" = "glibc" ] ; then
+	(cd $src_dir/$name; touch intl/plural.c)
+    fi
+}
+
+# Check that the source tree for a specified component is in place
+# and if not, download it.
+# Argument 1 is the source location specified with a --src= argument.
+# Argument 2 is the source directory specified with the --source argument.
+# Argument 3 is the name of the component whose source we want.
+
+function check_src() {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+
+    if [ "$preview" = "yes" ] ; then
+	return
+    fi
+
+    if [ ! -d $src_dir ] ; then
+	mkdir -p $src_dir
+    fi
+
+    tmpp1=`expr substr "$src" 1 4`
+    tmpp2=`expr substr "$src" 1 5`
+    if [ "$tmpp1" = "ftp:" -o "$tmpp2" = "http:" ] ; then
+      b=`basename $src`
+      if [ ! -f $src_dir/$b ] ; then
+	(cd $src_dir; wget -t 10 -nv $src)
+      fi
+      src=$src_dir/$b
+    fi
+
+    if [ "$src" = "" ] ; then
+	echo "Error: You must specify a $name source tree"
+	exit 1
+    fi
+
+    if [ ! -d $src ] ; then
+	if [ ! -f $src ] ; then
+	    if [ "$localgit" = "yes" ] ; then
+		git_src=`echo $src | sed -e 's,^file://,,'`
+	    else
+		git_src="$src"
+	    fi
+	    git_args=""
+	    branch_name=`find_list_entry "$name" "${branch_list[@]}"`
+	    if [ "${branch_name}" != "" ] ; then
+	        git_args="$git_args -b $branch_name"
+	    fi
+	    if [ "$src" = "$git_home/packages.git" ] ; then
+		if [ ! -d $src_dir/packages ] ; then
+		    (cd $src_dir; git clone $git_args $git_src packages)
+		fi
+		pver=`find_list_entry "$name" "${version_arglist[@]}"`
+	        c=`(cd $src_dir/packages; ls ${name}*${pver}* 2>/dev/null | wc -l)`
+		if [ $c -eq 0 ] ; then
+		    if [ "$pver" = "" ] ; then
+			echo "Error: Package ${name} not found in packages.git"
+		    else
+			echo "Error: Package ${name} with version ${pver} not found in packages.git"
+		    fi
+		    exit 1
+		elif [ $c -gt 1 ] ; then
+		    if [ "$pver" = "" ] ; then
+			echo "Error: Package ${name} matches multiple files in packages.git"
+		    else
+			echo "Error: Package ${name} with version ${pver} matches multiple files in packages.git"
+		    fi
+		    exit 1
+		fi
+	        s=`(cd $src_dir/packages; ls ${name}*${pver}*)`
+		src=$src_dir/packages/$s
+	    fi
+	    if [ ! -f $src -a ! -d $src_dir/$name ] ; then
+		(cd $src_dir; git clone $git_args $git_src $name)
+	        update_src_and_apply_patches $1 $2 $3
+	    fi
+	fi
+	if [ -f $src ] ; then
+	    if [ ! -d $src_dir/$name ] ; then
+		if [ ! -d $src_dir/tmp ] ; then
+		    mkdir $src_dir/tmp
+		fi
+		(cd $src_dir/tmp; tar -xf $src)
+		count=`ls $src_dir/tmp | wc -l`
+		if [ $count -ne 1 ] ; then
+		    echo "Error: untar failed"
+		    exit 1
+		fi
+		n=`(cd $src_dir/tmp; ls)`
+		mv $src_dir/tmp/$n $src_dir/$name
+	        update_src_and_apply_patches $1 $2 $3
+	    fi
+	fi
+	src="$src_dir/$name"
+    fi
+    if [ ! -d $src ] ; then
+	echo "Error: The $name source tree ($src) does not exist or is not a directory"
+	exit 1
+    fi
+}
+
+# Return the location of the source tree for a given component.
+# This function takes the same arguments as check_src.
+
+function find_src() {
+    local src="$1"
+    local src_dir=$(readlink -m $2)
+    local name="$3"
+    if [ ! -d $src ] ; then
+	src="$src_dir/$name"
+    fi
+    echo $(readlink -m $src)
+}
+
+# Update source will run git pull on a source tree if it is a git repository
+# otherwise it does nothing.  This function takes the same arguments as
+# check_src.
+
+function update_src() {
+    local src="$1"
+    local src_dir="$2"
+    local name="$3"
+    src=`find_src $1 $2 $3`
+    if [ "$preview" != "yes" ] ; then
+	if [ -d $src/.git ] ; then
+	    echo "UPDATE: cd $src; git pull"
+	    (cd $src; git pull)
+	fi
+    fi
+}
+
+# This function looks at the kernel sources (needed if building glibc or
+# uclibc) and returns the version number.  It takes no arguments.
+
+function get_linux_ver() {
+    s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    src=`find_src ${s} ${src_dir} linux`
+    if [ "$preview" = "yes" ] ; then
+        min_kernel_ver='KERNEL_version.patchlevel.sublevel(extraversion)'
+    elif [ -f $src/Makefile ] ; then
+	version=`cat $src/Makefile | grep '^VERSION =' | awk '{print $3}'`
+	patchlevel=`cat $src/Makefile | grep '^PATCHLEVEL =' | awk '{print $3}'`
+	sublevel=`cat $src/Makefile | grep '^SUBLEVEL =' | awk '{print $3}'`
+	extraversion=`cat $src/Makefile | grep '^EXTRAVERSION =' | awk '{print $3}'`
+	min_kernel_ver="${version}.${patchlevel}.${sublevel}${extraversion}"
+    else
+	echo "Error: No Makefile found in the linux source tree"
+	exit 1
+    fi
+    echo "$min_kernel_ver"
+}
+
+# This function runs the configure script for a particular component.
+# Argument 1 is the component name.
+# Argument 2 is the object directory we are going to run configure in.
+# Argument 3 is the path to the configure script 
+# Arguments 4+ are flags to be passed in to the configure script (quoted)
+
+function do_configure() {
+
+    local component_name=$1
+    local objdir=$2
+    local config_script=$3
+    shift;shift;shift;
+    local config_flags=( "${@}" )
+
+    if [ "$component_name" != "qemu" ] ; then
+      if [ "$bugurl" != "" ] ; then
+	config_flags=( "${config_flags[@]}" "--with-bugurl=$bugurl" )
+      fi
+      if [ "$pkgversion" != "" ] ; then
+	config_flags=( "${config_flags[@]}" "--with-pkgversion=$pkgversion" )
+      fi
+    fi
+    if [ "$config_script" = "" ] ; then
+      return 0
+    fi
+    if [ "$preview" = "yes" ] ; then
+      echo "cd $objdir"
+      echo "$config_script" "${config_flags[@]}"
+    else
+      if [ ! -d $objdir ] ; then
+	mkdir -p $objdir
+	(
+	cd $objdir || exit 1
+	echo "CD: cd $objdir"
+	echo "CONFIGURE: $config_script" "${config_flags[@]}"
+	if [ "x$host" != "x" ] ; then
+	  case $component in
+	      termcap)
+		  export AR=${host}-ar
+		  export RANLIB=${host}-ranlib
+		  export CC=${host}-gcc
+		  export CXX=${host}-g++
+		  export ac_cv_header_stdc=yes
+		  ;;
+	  esac
+	fi
+	$config_script "${config_flags[@]}" || exit 1
+	)
+	return $?
+      fi
+    fi
+}
+
+
+# This function runs make for a particular component.
+# Argument 1 is the component name.
+# Argument 2 is the object directory we are going to run configure in.
+# Argument 3 is the flags and target names to pass in to the makefile
+#   (passed to do_make as a single string).
+
+function do_make() {
+
+    local component_name=$1
+    local objdir=$2
+    local make_args=$3
+    local make_jobs=""
+
+    if [ $jobs -gt 1 ] ; then
+      if [ "$component_name" = "glibc" ]; then
+        make_args="$make_args PARALLELMFLAGS=--jobs=$jobs"
+      else
+        make_jobs="--jobs=$jobs"
+      fi
+    fi
+    if [ "$preview" = "yes" ] ; then
+      echo "cd $objdir"
+      echo "make $make_jobs $make_args"
+    else
+      if [ "$make_args" != "" ] ; then
+	if [ ! -d $objdir ] ; then
+	  echo "Error: Cannot run make in $objdir, does not exist."
+	  exit 1
+	fi
+	(
+	  cd $objdir
+	  echo "CD: cd $objdir"
+	  echo "MAKE: make $make_jobs $make_args"
+	  make $make_jobs $make_args || exit 1
+	)
+	return $?
+      fi
+    fi
+}
+
+# This function will cause an exit if the second argument passed in
+# is non-zero.  We do not check the return of 'make' in do_make because
+# for some makes (those doing 'make check' for example) we do not want
+# to exit.
+# Argument 1 is the name of the command whose return code we are checking.
+# Argument 2 is the return value from that command.
+
+function check_return() {
+    command=$1
+    ret_val=$2
+    if [ $ret_val -ne 0 ] ; then
+        if [ "${command}" = "make" ] ; then
+	    echo "Error: Make command failed, stopping build."
+	elif [ "${command}" = "configure" ] ; then
+	    echo "Error: Configure command failed, stopping build."
+	else
+	    echo "Error: Command failed, stopping build."
+	fi
+	exit $ret_val
+    fi
+}
+
+# This function returns whether to use the "old", "new", or "default"
+# sysroot layout.  It should not be called before the initial_gcc
+# component is built.
+
+function get_sysroot_layout() {
+    local target_gcc=${target}-gcc
+    if [ "$sysrootlayout" = "" ] ; then
+	case $target in
+	    *mti*|*img*)
+		hs=`$target_gcc --print-sysroot-headers-suffix 2>/dev/null`
+		case $hs in
+			/mips*) sysrootlayout="new" ;;
+			*) sysrootlayout="old" ;;
+		esac ;;
+	*)
+		sysrootlayout="default" ;;
+	esac
+    fi
+    echo "$sysrootlayout"
+}
+
+# This function is used by build_one_glibc and build_one_uclibc to copy
+# the linux header files into the sysroot where those libraries will install
+# their own headaers and libraries.  It takes no arguments.
+
+function build_linux_headers() {
+    local target_gcc=${target}-gcc
+    local s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    local src=`find_src ${s} ${src_dir} linux`
+
+    sysrootlayout=`get_sysroot_layout`
+    if [ "$sysrootlayout" != "new" ] ; then
+      do_make linux_headers $src "headers_install ARCH=$arch INSTALL_HDR_PATH=$sysroot/usr"
+      check_return make $?
+
+      need_uclibc_sys_headers=`$target_gcc --print-multi-lib | grep uclibc`
+      if [ "${need_uclibc_sys_headers}" != "" ] ; then
+	do_make linux_headers $src "headers_install ARCH=$arch INSTALL_HDR_PATH=$sysroot/uclibc/usr"
+	check_return make $?
+      fi
+    fi
+}
+
+function copy_linux_headers() {
+    local s=`find_list_entry linux "${src_list[@]}"`
+    check_src ${s} ${src_dir} linux
+    local src=`find_src ${s} ${src_dir} linux`
+
+    local root=$1
+    do_make linux_headers $src "headers_install ARCH=$arch INSTALL_HDR_PATH=$root/usr"
+    check_return make $?
+}
+
+# This function builds a single version of the uclibc library for a given
+# set of GCC options (hard-float/soft-float, big-endian/little-endian, etc).
+# Argument 1 is one line from the output of 'gcc --print-multi-libs',
+# this defines what flags to compile uclibc with and what directory to put
+# the libraries into.
+
+function build_one_uclibc() {
+    ml=$*
+    component=uclibc
+
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+
+    sysrootlayout=`get_sysroot_layout`
+
+    nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+    libc_subdir="obj_${nn}"
+    if [ "$bld_altdir" = "" ] ; then
+      build_directory=$bld_dir/$component/$libc_subdir
+    else
+      build_directory=$bld_dir/$bld_altdir/$libc_subdir
+    fi
+
+    if [ "$sysrootlayout" = "new" ] ; then
+      arch_prefix=`get_arch_prefix $ml`
+      # Should check to see if I have already done this
+      copy_linux_headers $sysroot/$arch_prefix
+    fi
+
+    if [ ! -d $build_directory ] ; then
+      mkdir -p $build_directory
+    fi
+
+    dd=`echo $ml | sed -e 's/;.*$//'`
+    if [ "$dd" = "." ] ; then
+      exec_prefix="/usr"
+    else
+      exec_prefix="/$dd/usr"
+    fi
+# _el_ is used for old sysroot style, mipsel for the new sysroot style
+    case _${nn}_ in
+	*_el_*)   UCLIBC_EXTRA_CFLAGS="-EL" ;;
+	*mipsel*) UCLIBC_EXTRA_CFLAGS="-EL" ;;
+	*)        UCLIBC_EXTRA_CFLAGS="-EB" ;;
+    esac
+# _mips64 is used for old sysroot style, lib32/lib64 for the new sysroot style
+    case _${nn}_ in
+	*lib32*)   ;;
+	*lib64*)   ;;
+	*_mips64*) ;;
+	*)	   UCLIBC_EXTRA_CFLAGS="$UCLIBC_EXTRA_CFLAGS -mfp32" ;;
+    esac
+    UCLIBC_EXTRA_LDFLAGS="$UCLIBC_EXTRA_CFLAGS"
+
+    export UCLIBC_EXTRA_CFLAGS
+    export UCLIBC_EXTRA_LDFLAGS
+
+    MFLAGS="VERBOSE=1 CROSS_COMPILE=${target}- PREFIX=$sysroot O=$build_directory ARCH=mips"
+    # Assume we only use 'old' uclibc sources with GROUP_DIR change for the
+    # old layout and 'new' uclibc sources with DEVEL_GROUP_DIR and
+    # RUNTIME_GROUP_DIR change for the new layout.
+    if [ "$sysrootlayout" = "new" ] ; then
+      MFLAGS="$MFLAGS KERNEL_HEADERS=$sysroot/$arch_prefix/usr/include DEVEL_GROUP_DIR=/usr/lib RUNTIME_GROUP_DIR=/lib"
+    else
+      MFLAGS="$MFLAGS KERNEL_HEADERS=$sysroot/usr/include GROUP_DIR=usr/lib/"
+    fi
+
+    pushd $src > /dev/null
+    do_make uclibc $src "${MFLAGS} defconfig"
+    check_return make $?
+    tconfig=/tmp/config.$$
+    cat $build_directory/.config | grep -v -e '^#' -e ENDIAN -e ISA -e ABI -e HAS_FPU -e NAN -e UCLIBC_EXTRA_CFLAGS -e LDSO_RUNPATH_OF_EXECUTABLE > $tconfig
+
+    echo "UCLIBC_EXTRA_CFLAGS=\"$UCLIBC_EXTRA_CFLAGS\"" >> $tconfig
+    echo "LDSO_RUNPATH_OF_EXECUTABLE=y" >> $tconfig
+
+# _el_ is used for old sysroot style, mipsel for the new sysroot style
+    case _${nn}_ in
+	*_el_*)   echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_LITTLE_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_LITTLE_ENDIAN=y" >> $tconfig ;;
+	*mipsel*) echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_LITTLE_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_LITTLE_ENDIAN=y" >> $tconfig ;;
+	*)        echo "ARCH_ANY_ENDIAN=y" >> $tconfig
+		  echo "ARCH_BIG_ENDIAN=y" >> $tconfig
+		  echo "ARCH_WANTS_BIG_ENDIAN=y" >> $tconfig ;;
+    esac
+# mips32/mips64 are used for old sysroot style, r1/r2 for the new sysroot style
+    case _${nn}_ in
+	*r1*lib32*) echo "CONFIG_MIPS_ISA_MIPS64=y"   >> $tconfig ;;
+	*r1*lib64*) echo "CONFIG_MIPS_ISA_MIPS64=y"   >> $tconfig ;;
+	*r1*)	    echo "CONFIG_MIPS_ISA_MIPS32=y"   >> $tconfig ;;
+	*r2*lib32*) echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*r2*ib64*)  echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*r2*)	    echo "CONFIG_MIPS_ISA_MIPS32R2=y" >> $tconfig ;;
+	*_mips32_*) echo "CONFIG_MIPS_ISA_MIPS32=y" >> $tconfig ;;
+	*_mips64_*) echo "CONFIG_MIPS_ISA_MIPS64=y" >> $tconfig ;;
+	*_mips64r2_*) echo "CONFIG_MIPS_ISA_MIPS64R2=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_ISA_MIPS32R2=y" >> $tconfig ;;
+    esac
+# mips64 is used for old sysroot style, lib32/lib64 for the new sysroot style
+    case _${nn}_ in
+	*_mips64*_64_*)  echo "CONFIG_MIPS_N64_ABI=y" >> $tconfig ;;
+	*_mips64*)  echo "CONFIG_MIPS_N32_ABI=y" >> $tconfig ;;
+	*lib64*)    echo "CONFIG_MIPS_N64_ABI=y" >> $tconfig ;;
+	*lib32*)    echo "CONFIG_MIPS_N32_ABI=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_O32_ABI=y" >> $tconfig ;;
+    esac
+    case _${nn}_ in
+	*nan2008*)  echo "CONFIG_MIPS_NAN_2008=y" >> $tconfig ;;
+	*)	    echo "CONFIG_MIPS_NAN_LEGACY=y" >> $tconfig ;;
+    esac
+    case _${nn}_ in
+	*_sof_*)    ;;
+	*-soft*)    ;;
+	*)	    echo "UCLIBC_HAS_FPU=y"  >> $tconfig ;;
+    esac
+
+    # uclibc builds shared only by default, DOPIC should give us both.
+    # echo "DOPIC=y" >> $tconfig
+    # echo "HAVE_SHARED=n" >> $tconfig
+    echo "UCLIBC_HAS_THREADS_NATIVE=y" >> $tconfig
+    ## We do not want multilib prefixes in linker scripts. It doesn't work.
+    #echo "HARDWIRED_ABSPATH=n" >> $tconfig
+
+    do_make uclibc $src "${MFLAGS} KCONFIG_ALLCONFIG=$tconfig allnoconfig"
+    check_return make $?
+    do_make uclibc $src "${MFLAGS} all"
+    check_return make $?
+    if [ "$sysrootlayout" != "new" ] ; then
+	if [ "$dd" = "uclibc" ] ; then
+	    do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/$exec_prefix/usr/ install_headers"
+	    check_return make $?
+	fi
+    fi
+    if [ "$sysrootlayout" = "new" ] ; then
+	do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/$arch_prefix/usr/ RUNTIME_PREFIX=/$arch_prefix/ MULTILIB_DIR=lib install"
+    else
+	do_make uclibc $src "${MFLAGS} DEVEL_PREFIX=/ RUNTIME_PREFIX=/ MULTILIB_DIR=$exec_prefix/lib install"
+    fi
+    check_return make $?
+    popd > /dev/null
+
+    unset UCLIBC_EXTRA_CFLAGS UCLIBC_EXTRA_LDFLAGS
+
+    # We need to reset CC and CXX because we changed them for the glibc build
+    # and we might build something (gcc, qemu) after building glibc.
+    if [ "${build32}" = "yes" ] ; then
+        export CC='gcc -m32'
+        export CXX='g++ -m32'
+    fi
+}
+
+# This function maps compiler settings (arch, endian, etc) into a sysroot
+# name.
+
+function get_arch_prefix() {
+    local ml=$*
+    local gcc_flags=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+    local target_gcc=${target}-gcc
+    local sysroot_prefix=`$target_gcc $gcc_flags --print-multi-os-directory`
+    local arch_prefix=`echo $sysroot_prefix | sed -e 's,/.*$,,'`
+    case $arch_prefix in
+	mips*) ;;
+	micromips*) ;;
+	*) echo "Error architecture prefix ($arch_prefix) is bad." ;;
+    esac
+    echo $arch_prefix
+}
+
+# This function builds a single version of the glibc library for a given
+# set of GCC options (hard-float/soft-float, big-endian/little-endian, etc).
+# Argument 1 is one line from the output of 'gcc --print-multi-libs',
+# this defines what flags to compile uclibc with and what directory to put
+# the libraries into.
+
+function build_one_glibc() {
+    ml=$*
+    component=glibc
+
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+
+    sysrootlayout=`get_sysroot_layout`
+
+    nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+    libc_subdir="obj_${nn}"
+    if [ "$bld_altdir" = "" ] ; then
+      build_directory=$bld_dir/$component/$libc_subdir
+    else
+      build_directory=$bld_dir/$bld_altdir/$libc_subdir
+    fi
+
+    if [ "$sysrootlayout" = "new" ] ; then
+      arch_prefix=`get_arch_prefix $ml`
+      # Should check to see if I have already done this
+      copy_linux_headers $sysroot/$arch_prefix
+    fi
+
+    dd=`echo $ml | sed -e 's/;.*$//'`
+    if [ "$dd" = "." ] ; then
+      exec_prefix="/usr"
+    else
+      exec_prefix="/$dd/usr"
+    fi
+    FLAGS=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+    case $FLAGS in
+      *soft-float*) SOFT="--without-fp" ;;
+      *)            SOFT="" ;;
+    esac
+    case $FLAGS in
+      *mips64*) libc_target=`echo $target | sed -e 's/^mips-mti/mips64-mti/' -e 's/^mips-img/mips64-img/'` ;;
+      *) libc_target=$target ;;
+    esac
+
+    export BUILD_CC=gcc
+    export AR=${target}-ar
+    export RANLIB=${target}-ranlib
+    export CC="${target}-gcc $FLAGS"
+    export CXX="${target}-g++ $FLAGS"
+
+    K=`get_linux_ver`
+    bin_sfx=
+    if [ "$sysrootlayout" = "old" ] ; then
+      F=( "--prefix=/usr/fake" "--with-headers=$sysroot/usr/include" )
+    elif [ "$sysrootlayout" = "new" ] ; then
+      F=( "--prefix=/usr" )
+      case $FLAGS in
+	*mabi=32*) bin_sfx=-o32 ;;
+	*mabi=n32*) bin_sfx=-n32 ;;
+	*mabi=n64*) bin_sfx=-n64 ;;
+      esac
+    else
+      F=( "--prefix=/usr" "--with-headers=$sysroot/usr/include" )
+    fi
+    F=( "${F[@]}" "--build=i686-pc-linux-gnu" "--host=$libc_target" )
+    F=( "${F[@]}" "--disable-profile" "--without-gd" "--without-cvs" )
+    F=( "${F[@]}" "--enable-add-ons" )
+    CONFIGURE="$src/configure"
+    MAKE_TARGET_ALL="all"
+    if [ "$sysrootlayout" = "old" ] ; then
+      MAKE_TARGET_INSTALL="install install_root=$sysroot exec_prefix=$exec_prefix prefix=/usr slibdir=/usr/lib inst_slibdir=$sysroot/$exec_prefix/lib libdir=/usr/lib inst_libdir=$sysroot/$exec_prefix/lib rtlddir=/usr/lib inst_rtlddir=$sysroot/$exec_prefix/lib"
+    elif [ "$sysrootlayout" = "new" ] ; then
+      MAKE_TARGET_INSTALL="install install_root=$sysroot/$arch_prefix inst_bindir=$sysroot/$arch_prefix/usr/bin$bin_sfx inst_rootsbindir=$sysroot/$arch_prefix/sbin$bin_sfx inst_sbindir=$sysroot/$arch_prefix/usr/sbin$bin_sfx"
+    else
+      MAKE_TARGET_INSTALL="install install_root=$sysroot"
+    fi
+    if [ "$SOFT" != "" ] ; then
+	F=( "${F[@]}" "$SOFT" )
+    fi
+    if [ "$extra_config_opts" != "" ] ; then
+	F=( "${F[@]}" "$extra_config_opts" )
+    fi
+    if [ "$make_target_all" = "skip" ] ; then
+	MAKE_TARGET_ALL=""
+    elif [ "$make_target_all" != "" ] ; then
+	MAKE_TARGET_ALL="$make_target_all"
+    fi
+    if [ "$make_target_install" = "skip" ] ; then
+	MAKE_TARGET_INSTALL=""
+    elif [ "$make_target_install" != "" ] ; then
+	MAKE_TARGET_INSTALL="$make_target_install"
+    fi
+    if [ ! -d $build_directory ] ; then
+	do_configure glibc $build_directory $CONFIGURE "${F[@]}"
+        check_return configure $?
+    fi
+    do_make glibc $build_directory "$MAKE_TARGET_ALL"
+    check_return make $?
+    do_make glibc $build_directory "$MAKE_TARGET_INSTALL"
+    check_return make $?
+
+    unset BUILD_CC AR RANLIB CC CXX
+
+    # We need to reset CC and CXX because we changed them for the uclibc build
+    # and we might build something (gcc, qemu) after building uclibc.
+    if [ "${build32}" = "yes" ] ; then
+        export CC='gcc -m32'
+        export CXX='g++ -m32'
+    fi
+}
+
+# This function builds all the system libraries (glibc or uclibc) for a
+# multilib enabled GCC.  If building a non-multilib enabled GCC it will
+# build a single version of glibc in whatever the default mode for GCC is.
+# This function takes no arguments.
+
+function build_system_libs() {
+
+    local target_gcc=${target}-gcc
+
+    # As a hack we build the mips64 libraries (n32 and n64) first followed
+    # by the mips32 (o32) libraries.  This ensures that if we build all 3
+    # abi's with the same sysroot (creating /lib, /lib32, and /lib64) that
+    # the executables in /bin and /sbin are built with the o32 abi and will
+    # work on both mips32 and mips64 machines.
+
+    if [ "$grep_multilibs" = "" ] ; then
+	ml_list1=`$target_gcc --print-multi-lib | grep mips64`
+	ml_list2=`$target_gcc --print-multi-lib | grep -v mips64`
+    else
+	ml_list1=`$target_gcc --print-multi-lib | grep mips64 | eval $grep_multilibs`
+	ml_list2=`$target_gcc --print-multi-lib | grep -v mips64 | eval $grep_multilibs`
+    fi
+
+    for ml in $ml_list1 $ml_list2
+    do
+      ml_flags=`echo $ml | sed -e 's/^.*;//' -e 's/@/ -/g'`
+      suffix_tmp=`echo $ml | sed -e "s/\(.*\);.*/\1/"`
+      ml_libgcc=`$target_gcc --print-file-name=libgcc.a $ml_flags`
+      if [ "x${suffix_tmp}" != "x." -a \
+	   "x${ml_libgcc%%${suffix_tmp}/libgcc.a}${suffix_tmp}/libgcc.a" != "x${ml_libgcc}" ]; then
+	# If libgcc was not built (or was found in the default folder
+	# instead of the multilib specific folder suffix then system libs
+	# should not be build
+	continue
+      fi
+      nn=`echo $ml | sed -e 's/;.*$//' -e 's,/,_,g' -e 's/\./default/'`
+      case "$ml" in
+	*uclibc*) core_lib=uclibc ;;
+	*)	  core_lib=glibc ;;
+      esac
+      if [ "$core_lib" = "glibc" ] ; then
+	build_one_glibc $ml || exit 1
+      else
+	build_one_uclibc $ml || exit 1
+      fi
+    done
+}
+
+# This function builds one component.  It uses the component name and the
+# target name to determine how to configure and build the desired component.
+# Argument 1 is the component to build.
+
+function build_component() {
+    local component=$1
+    local build_directory=""
+    local local_build_version=${build_version}
+
+    local MAKE_TARGET_ALL="all"
+    local MAKE_TARGET_INSTALL="install"
+    local CONFIGURE=""
+    local GCC_FLAGS=( "--disable-libssp"
+		      "--disable-libmudflap" "--disable-decimal-float" )
+    case $target in
+	mips*)
+		GCC_FLAGS=( "${GCC_FLAGS[@]}" "--with-mips-plt" ) ;;
+    esac
+
+    local F=( )
+    local H=""
+
+    if [ "${component}" = "initial_gcc" ] ; then
+      build_directory="${bld_dir}/${component}"
+      local_build_version=initial
+      component=gcc
+    else
+      build_directory="${bld_dir}/${component}"
+    fi
+
+    if [ "$bld_altdir" != "" ] ; then
+	build_directory="${bld_dir}/${component}"
+    fi
+    if [ "$bld_subdir" != "" ] ; then
+	build_directory="$build_directory/$bld_subdir"
+    fi
+    s=`find_list_entry $component "${src_list[@]}"`
+    check_src $s ${src_dir} $component
+    src=`find_src $s ${src_dir} $component`
+    CONFIGURE="$src/configure"
+    F=( "${F[@]}" "--prefix=$prefix" )
+    if [ "$disable_multilib" != "" -a "$component" != "qemu" ] ; then
+	F=( "${F[@]}" "$disable_multilib" )
+    fi
+    if [ "$host" != "" ] ; then
+	H="--host=$host"
+    else
+	H=""
+    fi
+
+    # Fix the GCC build tree to include other components
+    if [ "$component" = "gcc" ] ; then
+        if [ -d $src_dir/gmp ]; then
+            full_path=`readlink -m $src_dir/gmp`
+            (cd $src; ln -sf $full_path gmp)
+        fi
+        if [ -d $src_dir/mpfr ]; then
+            full_path=`readlink -m $src_dir/mpfr`
+            (cd $src; ln -sf $full_path mpfr)
+        fi
+        if [ -d $src_dir/mpc ]; then
+            full_path=`readlink -m $src_dir/mpc`
+            (cd $src; ln -sf $full_path mpc)
+        fi
+        newlib_s=`find_list_entry newlib "${src_list[@]}"`
+        newlib_src=`find_src $newlib_s ${src_dir} newlib`
+        if [ -d $newlib_src ]; then
+            (cd $src_dir/gcc; ln -sf $newlib_src/newlib newlib)
+            (cd $src_dir/gcc; ln -sf $newlib_src/libgloss libgloss)
+        fi
+        if [ -d $src_dir/dejagnu ]; then
+            full_path=`readlink -m $src_dir/dejagnu`
+            (cd $src; ln -sf $full_path dejagnu)
+	else
+            deja_s=`find_list_entry dejagnu "${src_list[@]}"`
+            deja_src=`find_src $deja_s ${src_dir} dejagnu`
+            if [ -d $deja_src ]; then
+                (cd $src; ln -sf $deja_src dejagnu)
+            fi
+        fi
+    fi
+
+    case $component/$target in
+	binutils/mips*-elf)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld"
+	    F=( "${F[@]}" $H "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" ) ;;
+	binutils/*-linux-*)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof"
+	    F=( "${F[@]}" $H "--target=$target" "--with-sysroot=$sysroot" ) ;;
+	binutils/native)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof" ;;
+	binutils-gdb/mips*-elf)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-sim"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-sim"
+	    F=( "${F[@]}" $H "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" ) ;;
+	binutils-gdb/mips*-linux-*)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-gprof"
+	    F=( "${F[@]}" $H "--target=$target" "--with-sysroot=$sysroot" ) ;;
+	binutils-gdb/native)
+	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gdb all-gprof"
+	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gdb install-gprof" ;;
+	gcc/mips*-elf)
+	    F=( "${F[@]}" $H "${GCC_FLAGS[@]}" "--target=$target" "--with-newlib" )
+	    F=( "${F[@]}" "--with-gnu-as" "--with-gnu-ld" )
+	    if [ "$local_build_version" = "initial" ] ; then
+		MAKE_TARGET_ALL="all-gcc"
+		MAKE_TARGET_INSTALL="install-gcc"
+		if [ -d $bld_dir/mpc ] ; then
+			MAKE_TARGET_ALL="all-mpc $MAKE_TARGET_ALL"
+			MAKE_TARGET_INSTALL="install-mpc $MAKE_TARGET_INSTALL"
+		fi
+		if [ -d $bld_dir/mpfr ] ; then
+			MAKE_TARGET_ALL="all-mpfr $MAKE_TARGET_ALL"
+			MAKE_TARGET_INSTALL="install-mpfr $MAKE_TARGET_INSTALL"
+		fi
+		if [ -d $bld_dir/gmp ] ; then
+			MAKE_TARGET_ALL="all-gmp $MAKE_TARGET_ALL"
+			MAKE_TARGET_INSTALL="install-gmp $MAKE_TARGET_INSTALL"
+		fi
+		F=( "${F[@]}" "--enable-languages=c,c++" )
+		F=( "${F[@]}" "--without-headers" )
+	    else
+		F=( "${F[@]}" "--enable-languages=$languages" )
+		F=( "${F[@]}" "--with-sysroot=$sysroot" "--with-build-sysroot=$sysroot" )
+	    fi ;;
+	gcc/*-linux-*)
+	    F=( "${F[@]}" $H "${GCC_FLAGS[@]}" "--target=$target" )
+	    if [ "$gcc_arch" != "" ] ; then
+		F=( "${F[@]}" "--with-arch=$gcc_arch" )
+	    fi
+	    if [ "$gcc_abi" != "" ] ; then
+		F=( "${F[@]}" "--with-abi=$gcc_abi" )
+	    fi
+	    if [ "$gcc_endian" != "" ] ; then
+		F=( "${F[@]}" "--with-endian=$gcc_endian" )
+	    fi
+	    if [ "$gcc_enable_targets" != "" ] ; then
+		F=( "${F[@]}" "--enable-targets=$gcc_enable_targets" )
+	    fi
+	    if [ "$local_build_version" = "initial" ] ; then
+		MAKE_TARGET_ALL="all-gcc all-target-libgcc inhibit_libc=true"
+		MAKE_TARGET_INSTALL="install-gcc install-target-libgcc"
+		F=( "${F[@]}" "--enable-languages=c" "--without-headers" )
+		F=( "${F[@]}" "--disable-shared" "--disable-threads" )
+		F=( "${F[@]}" "--disable-libquadmath" "--disable-libatomic" )
+		F=( "${F[@]}" "--with-sysroot=$sysroot" )
+	    else
+		F=( "${F[@]}" "--enable-languages=$languages" )
+		case $host:$target in
+		    mips*:mips*)
+			# Candian cross host~=target tools
+			F=( "${F[@]}" "--with-sysroot=/" )
+			F=( "${F[@]}" "--with-build-sysroot=$sysroot" )
+			;;
+		    *)
+			F=( "${F[@]}" "--with-sysroot=$sysroot" )
+			;;
+		esac
+		case $target in
+		    mips*-linux-*)
+			F=( "${F[@]}" "--enable-__cxa_atexit" ) ;;
+		esac
+	    fi ;;
+	gcc/native)
+	    MAKE_TARGET_ALL="bootstrap"
+	    F=( "${F[@]}" "--enable-languages=$languages" ) ;;
+	newlib/*)
+	    F=( "${F[@]}" $H "--target=$target" ) ;;
+	gdb/mips-*-elf)
+	    MAKE_TARGET_ALL="all-gdb all-sim"
+	    MAKE_TARGET_INSTALL="install-gdb install-sim"
+	    if [ "x$hostlibs" != "x" ]; then
+		F=( "${F[@]}" "--with-libexpat-prefix=$hostlibs" )
+	    fi
+	    F=( "${F[@]}" $H "--disable-libmcheck" "--disable-nls" "--without-python" "--with-expat" "--target=$target" ) ;;
+	gdb/mips*-*-linux-gnu | gdb/mips*-linux-gnu)
+	    MAKE_TARGET_ALL="all-gdb"
+	    MAKE_TARGET_INSTALL="install-gdb"
+	    if [ "x$hostlibs" != "x" ]; then
+		F=( "${F[@]}" "--with-libexpat-prefix=$hostlibs" )
+	    fi
+	    F=( "${F[@]}" $H "--disable-libmcheck" "--disable-nls" "--without-python" "--with-expat" "--target=$target" )
+	    ;;
+	gdb/native)
+	    MAKE_TARGET_ALL="all-gdb"
+	    MAKE_TARGET_INSTALL="install-gdb" ;;
+	qemu/mips*-elf*)
+	    F=( "${F[@]}" "--disable-tools" "--disable-werror" )
+	    F=( "${F[@]}" "--target-list=mipsel-softmmu,mips-softmmu,mips64el-softmmu,mips64-softmmu") ;;
+	qemu/mips*-*linux-gnu)
+	    # Need disable-werror because linux-user/signal.c has
+	    # #warning lines about singnal handling not implemented
+	    # for n32, n64 ABIs.
+	    F=( "${F[@]}" "--disable-tools" "--disable-system" "--disable-werror" )
+	    F=( "${F[@]}" "--target-list=mips-linux-user,mipsel-linux-user,mipsn32-linux-user,mipsn32el-linux-user,mips64-linux-user,mips64el-linux-user" ) ;;
+	expat/*)
+	    F=( "${F[@]}" $H "--disable-shared" "--disable-nls" ) ;;
+	ncurses/*)
+	    F=( "${F[@]}" $H "--disable-shared" "--disable-nls" ) ;;
+	termcap/*)
+	    F=( "${F[@]}" "--disable-shared" "--disable-nls" )
+	    MAKE_TARGET_INSTALL="install oldincludedir=" ;;
+	gmp/*|mpfr/*|mpc/*)
+	    CONFIGURE=""
+	    MAKE_TARGET_ALL=""
+	    MAKE_TARGET_INSTALL="" ;;
+	*)
+	    echo "Bad build component/target ($component/$target)"; exit 1 ;;
+    esac
+    if [ "$extra_config_opts" != "" ] ; then
+	F=( "${F[@]}" $extra_config_opts )
+    fi
+    if [ "$make_target_all" = "skip" ] ; then
+	MAKE_TARGET_ALL=""
+    elif [ "$make_target_all" != "" ] ; then
+	MAKE_TARGET_ALL="$make_target_all"
+    fi
+    if [ "$make_target_install" = "skip" ] ; then
+	MAKE_TARGET_INSTALL=""
+    elif [ "$make_target_install" != "" ] ; then
+	MAKE_TARGET_INSTALL="$make_target_install"
+    fi
+    do_configure $component $build_directory "$CONFIGURE" "${F[@]}"
+    check_return configure $?
+    do_make $component $build_directory "$MAKE_TARGET_ALL"
+    check_return make $?
+    do_make $component $build_directory "$MAKE_TARGET_INSTALL"
+    check_return make $?
+}
+
+# This function checks one component.  Currently we only support running
+# check on the GCC component.
+# Argument 1 is the component to build.
+
+
+function check_component() {
+    c=$1
+    if [ "$bld_altdir" = "" ] ; then
+	bld_c="$c"
+    else
+	bld_c="$bld_altdir"
+    fi
+    MAKE_TARGET_CHECK="check"
+    if [ "$make_target_check" = "skip" ] ; then
+	MAKE_TARGET_CHECK=""
+    elif [ "$make_target_check" != "" ] ; then
+	MAKE_TARGET_CHECK="$make_target_check"
+    fi
+    if [ "$runtestflags" = "" ] ; then
+	if [ "$dejagnu_baseboard" != "" ] ; then
+		runtestflags="--target_board=$dejagnu_baseboard"
+	fi
+    else
+	if [ "$dejagnu_baseboard" != "" ] ; then
+		echo "Error: Both runtestflags and dejagnu_baseboard are set"
+		exit 1
+	fi
+    fi
+
+   if [ "$dejagnu_sim" != "" ] ; then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM=\"$dejagnu_sim\""
+	fi
+	export DEJAGNU_SIM="$dejagnu_sim"
+   fi
+
+    if [ "$dejagnu_sim_options" != "" ] ; then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_OPTIONS=\"$dejagnu_sim_options\""
+	fi
+	export DEJAGNU_SIM_OPTIONS="$dejagnu_sim_options"
+    fi
+
+    if [ "$dejagnu_sim_link_flags" != "" ]
+    then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_LINK_FLAGS=\"$dejagnu_sim_link_flags\""
+	fi
+	export DEJAGNU_SIM_LINK_FLAGS="$dejagnu_sim_link_flags"
+    fi
+
+    if [ "$dejagnu_sim_ldscript" != "" ]
+    then
+	if [ "$preview" = "yes" ] ; then
+		echo "export DEJAGNU_SIM_LDSCRIPT=\"$dejagnu_sim_ldscript\""
+	fi
+	export DEJAGNU_SIM_LDSCRIPT="$dejagnu_sim_ldscript"
+    fi
+
+    if [ "$bld_subdir" != "" ] ; then
+        cdir=$bld_dir/$bld_c/$bld_subdir
+    else
+	cdir=$bld_dir/$bld_c
+    fi
+    cd $cdir
+    if [ "$MAKE_TARGET_CHECK" != "" ] ; then
+	if [ "$runtestflags" != "" ] ; then
+	    export RUNTESTFLAGS="$runtestflags"
+	fi
+	do_make $c $cdir "-k $MAKE_TARGET_CHECK"
+    fi
+}

@@ -1,0 +1,56 @@
+#!/bin/bash
+# This script is used to make a GCC workarea.  It should be run with one
+# argument, the directory where you want the workarea to be.  It will
+# checkout the build tools and those tools can do the rest of the checkouts
+# and builds from there.
+
+GITHOME=ssh://git@github.com/MIPS
+
+topdir=$1
+git_home=$2
+
+if [ "$topdir" = "" ] ; then
+	echo "Error: No directory specified"
+	exit 1
+fi
+abs=`expr substr "$topdir" 1 1`
+if [ "$abs" != "/" ] ; then
+	echo "Error: $topdir is not an absolute pathname"
+	exit 1
+fi
+
+function cd_to_dir() {
+    dir=$1
+    if [ ! -e $dir ] ; then
+        mkdir $dir
+    fi
+    if [ ! -d $dir ] ; then
+        echo "Error: $dir is not a directory, aborting"
+        exit 1
+    fi
+    cd $dir
+}
+
+cd_to_dir $topdir
+[ ! -h b ] && ln -s src/mips_tool_chain/build_scripts b
+if [ ! -d src/mips_tool_chain/.git ] ; then
+    cd_to_dir src
+    if [ "$git_home" = "" ] ; then
+      git_home=${GITHOME}
+    fi
+    git clone ${git_home}/mips_tool_chain.git
+    cd ..
+fi
+
+# Copy the build.* scripts to the top level and edit them
+# to set TOPDIR variable.
+
+cp b/build.* .
+for i in build.*
+do
+    mv $i $i.tmp
+    cat $i.tmp | sed -e "s,TOPDIR=/directory,TOPDIR=$topdir," \
+		 -e "s,GITHOME=$GITHOME,GITHOME=$git_home," > $i
+    chmod +x $i
+    rm -f $i.tmp
+done

@@ -1,0 +1,64 @@
+
+# This script uses the build script to create a glibc based mips native
+# GCC package.  Set TOPDIR and TARGET before running.  TOPDIR should be
+# The directory where you want to build everything (it will contain subdirs
+# for sources, objects, etc) and TARGET should be
+# mipsisa32r6el-unknown-linux-gnu or something like that.
+#
+#	Targets I have built with this script:
+#
+#		mipsisa32r6el-unknown-linux-gnu
+#		mipsisa64r6el-unknown-linux-gnu
+
+TOPDIR=/directory
+GITHOME=ssh://git@github.com/MIPS
+TARGET=mipsisa64r6el-unknown-linux-gnu
+INSTALL=$TOPDIR/install-$TARGET
+OBJ=$TOPDIR/obj-$TARGET
+SYSROOT=$INSTALL/sysroot
+
+
+SYSROOT_INSTALL=$TOPDIR/sysroot-tools-$TARGET
+SYSROOT_OBJ=$TOPDIR/obj-sysroot-$TARGET
+SYSROOT_HOME=$SYSROOT_INSTALL/sysroot
+
+cd $TOPDIR
+
+SRCLIST="--src=gcc:ssh://git@github.com/MIPS/gcc.git \
+         --branch=gcc:mips_rel/4_9_0/master \
+	 --src=binutils-gdb:ssh://git@github.com/MIPS/binutils-gdb.git \
+	 --branch=binutils-gdb:mips_rel/2_24/master \
+	 --src=glibc:ssh://git@github.com/MIPS/glibc.git \
+	 --branch=glibc:mips_rel/2_19/master"
+
+
+G="$SRCLIST --path=$SYSROOT_INSTALL/bin --git_home=$GITHOME --target=$TARGET --jobs=3"
+G2="--build=$SYSROOT_OBJ --prefix=$SYSROOT_INSTALL --sysroot=$SYSROOT_HOME"
+G3="--build=$OBJ --prefix=$INSTALL --sysroot=$SYSROOT --host=$TARGET"
+
+# If you want to force an update of your sources before the build.
+# uncommment the next line.
+# b/update $G binutils-gdb glibc gcc
+
+# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# uncomment the next line.
+b/update $G gmp mpfr mpc
+
+# Build binutils & GCC (initial) to create sysroot and then build sysroot.
+
+if [ ! -f $SYSROOT_INSTALL/bin/$TARGET-gcc ] ; then
+
+  b/build_toolchain build $G $G2 binutils-gdb || exit 1
+  b/build_toolchain build $G $G2 initial_gcc || exit 1
+  b/build_toolchain build $G $G2 linux_headers || exit 1
+  b/build_toolchain build $G $G2 sysroot || exit 1
+  b/build_toolchain build $G $G2 gcc || exit 1
+fi
+
+mkdir -p $INSTALL
+if [ ! -d $SYSROOT ] ; then
+  cp -r $SYSROOT_HOME $INSTALL
+fi
+
+b/build_toolchain build $G $G3 binutils-gdb || exit 1
+b/build_toolchain build $G $G3 gcc || exit 1

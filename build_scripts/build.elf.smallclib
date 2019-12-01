@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# Directory from where this script will be run
+TOPDIR=/directory
+
+# Target toolchain and path
+TARGET=mips-mti-elf
+TOOLCHAIN=$TOPDIR/install-$TARGET
+
+# SmallCLib install, object and source folders
+INSTALL=$TOPDIR/install-smallclib-$TARGET
+OBJDIR=$TOPDIR/obj-smallclib-$TARGET
+SRCDIR=$TOPDIR/src/smallclib
+
+# Source and destination sysroot folder
+SRC_SYSROOT_DIR=$TOOLCHAIN/$TARGET/lib
+DST_SYSROOT_DIR=$INSTALL/$TARGET/lib
+
+# Source and destination GCC library folder
+SRC_GCC_LIB_DIR=$TOOLCHAIN/lib
+DST_GCC_LIB_DIR=$INSTALL/lib
+
+# Multilib configuration to build
+MULTILIB="
+mips-r2-hard-nan2008-small/lib;@mclib=small@mips32r2@mabi=32@EB@mnan=2008
+mips-r2-hard-nan2008-tiny/lib;@mclib=tiny@mips32r2@mabi=32@EB@mnan=2008
+mipsel-r2-hard-nan2008-small/lib;@mclib=small@mips32r2@mabi=32@EL@mnan=2008
+mipsel-r2-hard-nan2008-tiny/lib;@mclib=tiny@mips32r2@mabi=32@EL@mnan=2008
+mipsel-r2-soft-small/lib;@mclib=small@mips32r2@mabi=32@EL@msoft-float
+mipsel-r2-soft-tiny/lib;@mclib=tiny@mips32r2@mabi=32@EL@msoft-float
+micromipsel-r2-hard-nan2008-small/lib;@mclib=small@mips32r2@mmicromips@mabi=32@EL@mnan=2008
+micromipsel-r2-hard-nan2008-tiny/lib;@mclib=tiny@mips32r2@mmicromips@mabi=32@EL@mnan=2008
+micromipsel-r2-soft-small/lib;@mclib=small@mips32r2@mmicromips@mabi=32@EL@msoft-float
+micromipsel-r2-soft-tiny/lib;@mclib=tiny@mips32r2@mmicromips@mabi=32@EL@msoft-float
+"
+
+echo Configure...
+
+# Do everything in OBJDIR
+cd $TOPDIR
+mkdir -p $OBJDIR || exit 1
+cd $OBJDIR || exit 1
+rm -f smallclib.log
+
+# --------------------------------------------------------------------------
+# Find corresponding newlib folders in SRC_SYSROOT_DIR and SRC_GCC_LIB_DIR
+# and copy them to DST_SYSROOT_DIR and DST_GCC_LIB_DIR.
+# Replace "newlib" in folder name to "small" or "tiny"
+# --------------------------------------------------------------------------
+for m in $MULTILIB; do
+
+    # Extract the small/tiny folder name from MULTILIB
+    small_folder=(${m//;/ })
+
+    # Find the library variant (small/tiny)
+    if echo "$small_folder" | grep -q "small"; then
+      target_folder="small";
+    else 
+        if echo "$small_folder" | grep -q "tiny"; then
+          target_folder="tiny";
+        else
+          echo "ERROR $small_folder does not contain small or tiny";
+          exit 1
+        fi
+    fi
+
+    # Construct name of the newlib folder
+    newlib_folder=${small_folder/$target_folder/newlib}
+    
+    # Create INSTALL folder for SmallCLib
+    mkdir -p $INSTALL || exit 1
+
+    # Copy newlib sysroot to INSTALL
+    mkdir -p $DST_SYSROOT_DIR/$small_folder || exit 1
+    pushd $SRC_SYSROOT_DIR/$newlib_folder > /dev/null
+    tar cf - . | (cd $DST_SYSROOT_DIR/$small_folder && tar xBf -)
+    popd > /dev/null
+
+    # Copy newlib lib folder to INSTALL
+    pushd $SRC_GCC_LIB_DIR > /dev/null
+    t1=$(find . -type d -print | grep -we "$newlib_folder")
+    t2=${t1/newlib/$target_folder}
+    popd > /dev/null
+    mkdir -p $DST_GCC_LIB_DIR/$t2 || exit 1
+    pushd $SRC_GCC_LIB_DIR/$t1 > /dev/null
+    tar cf - . | (cd $DST_GCC_LIB_DIR/$t2 && tar xBf -)
+    popd > /dev/null
+
+    echo "Library variant: $target_folder" >> smallclib.log
+    echo "Source folder: $newlib_folder" >> smallclib.log
+    echo "Target folder: $small_folder" >> smallclib.log
+    echo "Path to source sysroot folder: $SRC_SYSROOT_DIR/$newlib_folder" >> smallclib.log
+    echo "Path to target sysroot folder: $DST_SYSROOT_DIR/$small_folder" >> smallclib.log
+    echo "Path to source lib folder: $SRC_GCC_LIB_DIR/$t" >> smallclib.log
+    echo "Path to target lib folder: $DST_GCC_LIB_DIR/$t" >> smallclib.log
+    echo --------------------------------------------------------------- >> smallclib.log
+
+done
+
+echo Done
+
+# Build the SmallC library
+PATH=$TOOLCHAIN/bin:$PATH cmake -DCMAKE_TOOLCHAIN_FILE=$SRCDIR/toolchains/ToolChainMIPS.cmake $SRCDIR -DMULTILIB_SELECT=mclib -DCMAKE_INSTALL_PREFIX=$INSTALL -D_C_MULTILIBS="$MULTILIB" 
+
+make -j16 install
+
+find $INSTALL -type d -exec chmod 755 {} \;

@@ -1,0 +1,98 @@
+#!/bin/bash
+
+# This script uses the build script to create a glibc based linux native
+# GCC package.  TOPDIR should be the directory where you want to build
+# everything (it will contain subdirs for sources, objects, etc).
+
+# Two compilers will be built by this script. One is a cross compiler from
+# the current machine (build machine) to the target and one is the native
+# compiler. The former toolchain is a reference toolchain and gets used
+# by the build of the native toolchain when target files must be compiled.
+
+# An MTI or IMG vendor cross compiler is required to use this script.
+# If building an R2-R5 native toolchain then this must be mips-mti-linux-gnu
+# and it must contain a sysroot representing the host you are building for.
+# I.e. to build softfloat you would need a softfloat sysroot in the MTI
+# toolchain. MULTI_TARGET and MULTI_INSTALL should be set to the triple
+# and location of the cross compiler respectively.
+
+# HOST_FLAGS must currently match the target flags but can theoretically
+# be different. These flags indicate the ABI that the tools will execute
+# on and are used to select the correct sysroot from the MTI/IMG cross
+# compiler. Set the ABI using the ABI option but modify HOST_FLAGS for
+# and ABI or endian variant flags.
+
+# TARGET_CONFIG is the set of GCC configure options required to ensure
+# that the ABI selected by HOST_FLAGS is the default ABI targetted by
+# the toolchain. Endian selection is however done through the TARGET
+# setting. An o32 ABI should be used with a mips[el]- cpu and an n32 or n64
+# ABI should be used with a mips64[el]- cpu.
+
+# TARGET should be any of:
+# mips-linux-gnu, mipsel-linux-gnu, mips64-linux-gnu or mips64el-linux-gnu
+
+# Toolchains are installed in <sysroot suffix>-$ABI and the reference
+# cross compiler in <sysroot suffix>-$ABI-ref.
+
+# The settings in the default config are for a MIPS64R6 LE n64 hard-float
+# variant.
+
+TOPDIR=/directory
+MULTI_TARGET=mips-img-linux-gnu
+MULTI_INSTALL=$TOPDIR/install-$MULTI_TARGET
+ABI=64
+HOST_FLAGS="-mabi=$ABI -EL"
+TARGET_SYSROOT_FLAGS="$HOST_FLAGS"
+TARGET_CONFIG="--disable-multilib --with-abi=64 --with-arch-32=mips32r6 --with-arch-64=mips64r6"
+TARGET=mips64el-linux-gnu
+
+cd $TOPDIR
+
+CROSS_SYSROOT=`$MULTI_INSTALL/bin/$MULTI_TARGET-gcc $TARGET_SYSROOT_FLAGS -print-sysroot`
+if [ $? -ne 0 ]; then
+  echo "Error: sysroot not found"
+  exit 1;
+fi
+
+libc_name=`$MULTI_INSTALL/bin/$MULTI_TARGET-gcc $TARGET_SYSROOT_FLAGS -print-file-name=libc.so`
+libc_dir=`dirname $libc_name`
+abi_dir=`basename $libc_dir`
+
+INSTALL_NAME=`basename $CROSS_SYSROOT`-$ABI
+
+INSTALL=$TOPDIR/$INSTALL_NAME-ref
+OBJ=$TOPDIR/obj-$INSTALL_NAME-ref
+
+NATIVE_INSTALL=$TOPDIR/$INSTALL_NAME
+NATIVE_OBJ=$TOPDIR/obj-$INSTALL_NAME
+
+mkdir -p $NATIVE_INSTALL
+rsync -a --exclude=lib/ --exclude=lib32/ --exclude=lib64/ $CROSS_SYSROOT/ $NATIVE_INSTALL/
+mkdir -p $NATIVE_INSTALL/lib
+cp -r $CROSS_SYSROOT/$abi_dir/* $NATIVE_INSTALL/lib/
+mkdir -p $NATIVE_INSTALL/usr/lib
+cp -r $CROSS_SYSROOT/usr/$abi_dir/* $NATIVE_INSTALL/usr/lib/
+if [ $abi_dir != "lib" ]; then
+  (cd $NATIVE_INSTALL; ln -sf lib $abi_dir)
+  (cd $NATIVE_INSTALL/usr; ln -sf lib $abi_dir)
+fi
+
+G="--target=$TARGET --jobs=5"
+G2="--build=$OBJ --prefix=$INSTALL --sysroot=$NATIVE_INSTALL"
+b/build_toolchain build $G $G2 binutils || exit 1
+b/build_toolchain build --extra_config_opts="$TARGET_CONFIG" $G $G2 gcc || exit 1
+
+G="--target=$TARGET --jobs=5"
+G2="--path=$INSTALL/bin --build=$NATIVE_OBJ --prefix=$NATIVE_INSTALL/usr --sysroot=$NATIVE_INSTALL"
+G2="$G2 --hostlibs=$NATIVE_INSTALL --host=$TARGET"
+
+b/build_toolchain build $G $G2 binutils || exit 1
+b/build_toolchain build --extra_config_opts="$TARGET_CONFIG" $G $G2 gcc || exit 1
+b/build_toolchain build $G $G2 termcap || exit 1
+b/build_toolchain build $G $G2 ncurses || exit 1
+b/build_toolchain build $G $G2 expat || exit 1
+b/build_toolchain build $G $G2 gdb || exit 1
+
+(cd $NATIVE_INSTALL/usr/bin; ln -sf gcc cc)
+
+(cd $NATIVE_INSTALL/..; tar -czf $INSTALL_NAME.tgz $INSTALL_NAME)

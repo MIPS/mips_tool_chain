@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Codescape GNU Toolchain</title>
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="icon" type="image/png" href="./images/mips-icon.png">
+</head>
+
+<body>
+	<div id="GlobalHeaderContainer">
+		<div id="GlobalHeader">
+			<div class="logo">
+				<a href="https://www.mips.com/develop/tools/" target="_blank"><img src="./images/MIPS_Full_Wht.png" width="60%" height="60%" /></a>
+
+</div>
+			<div class="sitetitle">Codescape GNU Toolchain</div>
+		</div>
+	</div>
+	<div id="NavContainer">
+		<nav>
+			<div class="navlink">
+				<a href="index.html">Home</a>
+			</div>
+			<div class="navlink">
+				<a href="support.html">Support</a>
+			</div>
+			<div class="navlink">
+				<a href="releasenotes.html" class="current">Release Notes</a>
+			</div>
+			<div class="navlink">
+				<a href="downloads.html" >Downloads</a>
+			</div>
+			<div class="navlink">
+				<a href="license.html">License Agreements</a>
+			</div>
+		</nav>
+	</div>
+
+	<div class="content">
+	<h1>Release Notes</h1>
+
+	    <!-- ${TOC} -->
+	    2019.09-01
+	    &nbsp; <a href="#2019.09-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.09-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.09-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.09-01KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2019.09-01CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.09-01 -->
+	    2019.02-01
+	    &nbsp; <a href="#2019.02-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.02-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.02-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.02-01KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2019.02-01CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.02-01 -->
+	    2018.09-03
+	    &nbsp; <a href="#2018.09-03NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.09-03BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.09-03OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.09-03KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2018.09-02CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2018.09-03 -->
+	    2018.11-01
+	    &nbsp; <a href="#2018.11-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.11-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.11-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.11-01KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2018.11-01CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2018.11-01 -->
+	    2018.09-02
+	    &nbsp; <a href="#2018.09-02NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.09-02BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.09-02OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.09-02KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2018.09-02CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2018.09-02 -->
+	    2017.10-08
+	    &nbsp; <a href="#2017.10-08NewFeatures">New Features</a>
+	    &nbsp; <a href="#2017.10-08BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2017.10-08OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2017.10-08KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2017.10-08 -->
+	    2017.10-07
+	    &nbsp; <a href="#2017.10-07NewFeatures">New Features</a>
+	    &nbsp; <a href="#2017.10-07BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2017.10-07OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2017.10-07KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2017.10-07 -->
+	    2017.10-05
+	    &nbsp; <a href="#2017.10-05NewFeatures">New Features</a>
+	    &nbsp; <a href="#2017.10-05BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2017.10-05OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2017.10-05KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2017.10-05 -->
+	    2016.05-08
+	    &nbsp; <a href="#2016.05-08NewFeatures">New Features</a>
+	    &nbsp; <a href="#2016.05-08BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.05-08OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2016.05-08KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2016.05-08 -->
+	    2016.05-06
+	    &nbsp; <a href="#2016.05-06NewFeatures">New Features</a>
+	    &nbsp; <a href="#2016.05-06BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.05-06OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2016.05-06KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2016.05-06 -->
+	    2016.05-03
+	    &nbsp; <a href="#2016.05-03NewFeatures">New Features</a>
+	    &nbsp; <a href="#2016.05-03BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.05-03OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2016.05-03KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2016.05-03 -->
+	    2016.05-01
+	    &nbsp; <a href="#2016.05-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2016.05-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.05-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2016.05-01KnownIssues">Known Issues</a>
+	    <br />
+	    2015.10-04
+	    &nbsp; <a href="#2015.10-04NewFeatures">New Features</a>
+	    &nbsp; <a href="#2015.10-04BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.10-04OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2016.10-04KnownIssues">Known Issues</a>
+	    <br />
+	    2015.06-05
+	    &nbsp; <a href="#2015.06-05NewFeatures">New Features</a>
+	    &nbsp; <a href="#2015.06-05BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2016.06-05OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2015.06-05KnownIssues">Known Issues</a>
+
+
+		<div id="Toolchain">
+
+		<!-- ${NOTES} -->
+		<h2>Toolchain 2019.09-01</h2>
+		<h4>Published on September 29, 2019</h4>
+		<h3 id="2019.09-01NewFeatures">2019.09-01 New Features</h3>
+		<ul>
+		<li>Qemu component updated from v3.0.0 to v4.1.</li>
+		<li>GDB component updated from v7.9.1 to v8.2.1 (PP128993).</li>
+		<li>Python interpreter v3.7.4 in now included in toolchain packages for Linux hosts.</li>
+		<li>Linux kernel headers updated to v4.9.189 (PP129040).</li>
+		<li>Non-executable stack support is enabled by default in the GNU/Linux toolchain (PP129040).</li>
+		<li>The minimum required kernel version for GNU/Linux toolchains is now v4.8 to allow non-executable stack segments.</li>
+		<li>Include the the stack smash protection (ssp) library in all toolchain builds (PP128977).</li>
+		</ul>
+		<h3 id="2019.09-01BugFixes">2019.09-01 Bug Fixes</h3>
+		<ul>
+		<li>Fix redundant vector moves in dpadd/dpsub MSA builtin expansions.</li>
+		<li>Fix internal compiler error in expansion of <i>__builtin_mips_get_fcsr</i> (PP118932)</li>
+		<li>Fix the BFD linker to correctly handle PCHI16 relocations for negative offsets larger than 32k (DMZ#2617).</li>
+		<li>Fix MSA calling convention for big-endian targets.</li>
+		<li>Improve scattered double precision load for MSA using insve instruction.</li>
+		<li>Improve scattered complex&lt;float&gt; loads for MSA.</li>
+		<li>Fix crash in ld.so for soft-float little endian builds (PR binutils/24015).</li>
+		<li>Tune IFCVT parameters and RTX costs to improve if-conversion and utilization of conditional instructions on MIPS. This improves CoreMark and EEMBC performance for GCC7.</li>
+		<li>Fix offset of load-linked and store-conditional instructions for MIPS R6 to be 9-bit signed in GNUSim.</li>
+		  <li>Fix problem with indirect PIC calls to different functions being combined (PR target/89245).</li>
+		  <li>Fix unnecessary spill of MSA registers around function calls.</li>
+		  <li>Fix internal compiler error in MSA vectorization test gcc.dg/vect/pr88598-3.c (PR target/89378).</li>
+		  <li>Fix dwarf register sizing builtin for FPXX mode to correctly restore high parts of callee saved FPU registers.</li>
+		  <li>Fix discrepancies in floating-point multiply-add operations on MIPSr2-r5 with MSA enabled. Disable the use of fmadd.w in auto-vectorization if the base ISA does not also have a fused multipy-add instructions.</li>
+		  <li>Retain ISA mode bit for labels with .insn annotation (DMZ#2726). Roll-back previous fix for this which broke <i>%hi</i> relocations.</li>
+		  <li>Fix linker scripts to allow <i>_isr_vec_count=0</i> links. This is required for MIPS Open FPGA examples.</li>
+		  <li>Fix infinite zeroing loop in low-level initilization code for some target boards due to misaligned _end symbol in linker scripts.</li>
+		  <li>Fix incorrect li.d macro expansion in the assembler (DMZ#2430).</li>
+		  <li>Fix the disassembler to correctly sign-extend start and stop address values provided to it (PP129003).</li>
+		  <li>Modify the assembler to reject <i>$0</i> as source register for DAUI instructions.</li>
+		  <li>Modify the BFD linker to reject local exec TLS relocations occurring in shared libraries (PP128959).</li>
+		  <li>Fix crash in BFD linker when linking a non-PIC object containing statically scoped variables in to a shared library.</li>
+		  <li>Fix code generation for MSA branches to correctly utilize delay slots.</li>
+		  <li>Fix incorrect result in <i>strcmp()</i> where first string is a prefix of second and the first distinct character in the second string is extended ASCII (that is > 0x7f).</li>
+		  <li>Fix problem in GDB with setting break-points and single-stepping in microMIPS code running on QEMU.</li>
+		</ul>
+		<h3 id="2019.09-01OtherChanges">2019.09-01 Other Changes</h3>
+		<ul>
+		<li>MTI and IMG toolchains are now combined in to one MTI toolchain package. Use the appropriate <i>-march=__</i> compiler option to build for 32/64-bit R6 cores.</li>
+		<li>Include a gdb executable with python scripting support (suffixed by <i>-py</i>) in toolchain packages for Linux hosts. A gdb executable without python support is also provided with the same name as before (PP129056, DMZ#2177).</li>
+		<li>Mark MSA and MIPS-3D builtins as pure to improve code generation.</li>
+		<li>Include the system-mode QEMU executable for MIPS in all toolchain builds.</li>
+		<li>Retain symbolic links in the toolchain tree for CentOS instead of replicating files (PP128988).</li>
+		<li>Inhibit generation of branch-likely instruction on interAptiv-MR2.</li>
+		<li>Add expansions for ADD and SUB macros for R6 ISA.</li>
+		<li>Add new compiler option <i>-mfuse-vect-init</i> to improve vector initialization from consecutive memory locations. This is enabled by default.</li>
+		<li>Add option <i>-mfix-i6400/-mfix-i6500</i> to enable a software workaround for I6500 errata E#75. <b>Note:</b> Standard libraries and low-level run-time are not built with this option and may still be susceptible to E#75.</li>
+		</ul>
+		<h3 id="2019.09-01KnownIssues">2019.09-01 Known issues</h3>
+		<ul>
+		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
+		  <li>Local or initial exec TLS variables returning value in <i>$v1</i> register may cause a register allocation failure in some situations. The workaround is to declare the <i>$v1</i> register as clobbered with <i>asm&nbsp;volatile("":::"v1");</i> statement between the offending TLS access and the return statement.</li>
+		  <li>Python interpreter and gdb with python-scripting are not provided for Windows toolchains.</li>
+		</ul>
+		<h3 id="2019.09-01CompVer">2019.09-01 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.31.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>7.4.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">glibc</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>8.2.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">uclibc</td><td>0.9.31</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>4.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.31.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">python</td><td>3.7.4</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		</table>
+		<!-- End 2019.09-01 -->
+		<h2>Toolchain 2019.02-01</h2>
+		<h4>Published on February 10, 2019</h4>
+		Re-generated <a href="#2018.11-01NewFeatures">2018.11-01</a> release with updated GCC.
+		<h3 id="2019.02-01NewFeatures">2019.02-01 New Features</h3>
+		<ul>
+		<li>GCC component updated to v7.4.0.</li>
+		</ul>
+		<h3 id="2019.02-01BugFixes">2019.02-01 Bug Fixes</h3>
+		<ul>
+		  <li>Fix sub-optimal load/store bonding for MIPSR6.</li>
+		  <li>Add missing command-line options to enable the MXU ASE.</li>
+		</ul>
+		<h3 id="2019.02-01OtherChanges">2019.02-01 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2019.02-01KnownIssues">2019.02-01 Known issues</h3>
+		<ul>
+		  <li>Parts of the IIR filter from EEMBC show 30-50% performance degradation versus a GCC 6.3 based toolkit.</li>
+		  <li>Codesize comparison againg GCC 6.3 is generally better for both O2 and Os optimization levels, however there are few outliers which show up to 10% size increase.</li>
+		  <li>MSA calling convention is historically broken for big-endian targets.</li>
+		  <li>MIPS BFD linker can't handle PCHI16 relocations for negative offsets larger than 32k.</li>
+		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
+		  <li><i>strcmp()</i> gives incorrect result under the following conditions:
+		    <ul><li>First string is a prefix of second AND</li>
+		      <li>Length of first string is 1 less than a multiple of 4 AND</li>
+		      <li>The first distinct character in the second string is extended ASCII (that is > 0x7f).</li>
+		      </ul></li>
+		</ul>
+		<h3 id="2019.02-01CompVer">2019.02-01 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.31.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>7.4.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">glibc</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>7.9.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">uclibc</td><td>0.9.31</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		</table>
+		<!-- End 2019.02-01 -->
+		<h2>Toolchain 2018.09-03</h2>
+		<h4>Published on January 12, 2019</h4>
+		<h3 id="2018.09-03NewFeatures">2018.09-03 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.09-03BugFixes">2018.09-03 Bug Fixes</h3>
+		<ul>
+		  <li>Fix <i>memcpy()</i> to restrict pre-fetches to the memory region defined by its parameters (PP118771).</li>
+		  <li>Fix incorrect addr2line output due to interaction of 0-based address ranges and the <i>--gc-sections</i> option (PP118699).</li>
+		  <li>Fix ISA bit handling for microMIPS <i>%lo16</i> relocations in address calculation (DMZ#2726).</li>
+		</ul>
+		<h3 id="2018.09-03OtherChanges">2018.09-03 Other Changes</h3>
+		<ul>
+		  <li>Speed up section pattern matching for linker scripts using ordered hash-maps (PP118408).</li>
+		    <li>Enable ADD/SUB assembler macros for mipsR6 (DMZ#2634)</li>
+		    <li>Extend TRAP assembler macros to handle immediate 0 (DMZ#2833).</li>
+		</ul>
+		<h3 id="2018.09-03KnownIssues">2018.09-03 Known issues</h3>
+		<ul>
+		  <li>MIPS BFD linker can't handle PCHI16 relocations for negative offsets larger than 32k.</li>
+		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
+		  <li><i>strcmp()</i> gives incorrect result under the following conditions:
+		    <ul><li>First string is a prefix of second AND</li>
+		      <li>Length of first string is 1 less than a multiple of 4 AND</li>
+		      <li>The first distinct character in the second string is extended ASCII (that is > 0x7f).</li>
+		      </ul></li>
+		</ul>
+		<!-- End 2018.09-03 -->
+		<h2>Toolchain 2018.11-01</h2>
+		<h4>Published on November 23, 2018</h4>
+		<h3 id="2018.11-01Docs">2018.11-01 Documentation</h3>
+		<ul>
+		<li><a href="../2018.11-01/docs/MIPS_nanoMIPS_Memcpy_Tuning_Whitepaper_00_01.pdf">Tuning memcpy for MIPS Cores - whitepaper</a></li>
+		</ul>
+		<h3 id="2018.11-01NewFeatures">2018.11-01 New Features</h3>
+		<ul>
+		<li>Update GCC from v6.3.0 to v7.3.0</li>
+		<li>Update binutils from v2.29 to v2.31.1</li>
+		<li>Update glibc from v2.20 to v2.28</li>
+		<li>Update newlib from v2.5.0 to v3.0.0</li>
+		</ul>
+		<h3 id="2018.11-01BugFixes">2018.11-01 Bug Fixes</h3>
+		<ul>
+		  <li>Fix <i>memcpy()</i> to restrict pre-fetches to the memory region defined by its parameters (PP118771).</li>
+		  <li>Re-order <i>.eh_frame</i> sections in linker scripts for the end-of-frame marker from crtend.o to be placed last.</li>
+		  <li>Fix incorrect addr2line output due to interaction of 0-based address ranges and the <i>--gc-sections</i> option (PP118699).</li>
+		</ul>
+		<h3 id="2018.11-01OtherChanges">2018.11-01 Other Changes</h3>
+		<ul>
+		<li>Speed up section pattern matching for linker scripts using ordered hash-maps (PP118408).</li>
+		<li>Eliminate redundant sign-extensions in bit-field extraction.</li>
+		</ul>
+		<h3 id="2018.11-01KnownIssues">2018.11-01 Known issues</h3>
+		<ul>
+		  <li>Performance with the new toolchain is generally better, however there are few outliers which are being investigated.
+		    <ul>
+		    <li>Load/store bonding support for MIPSR6 cores is sub-optimal, causing up to 17% performance degradation in some benchmarks versus a GCC 6.3 based toolkit.</li>
+		    <li>Parts of the IIR filter from EEMBC show 30-50% performance degradation versus a GCC 6.3 based toolkit.</li>
+		    </ul>
+		  </li>
+		  <li>Codesize comparison with the new toolchain is generally better for both O2 and Os optimization levels, however there are few outliers which show up to 10% size increase.</li>
+		  <li>GCC in this release does not support a command-line options to enable the MXU ASE. The workaround is to pass the option directly to the assembler, i.e. <i>-Wa,-mmxu</i> in lieu of <i>-mmxu</i>.
+		  <li>MSA calling convention is historically broken for big-endian targets.</li>
+		</ul>
+		<h3 id="2018.11-01CompVer">2018.11-01 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.31.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>7.3.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">glibc</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>7.9.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">uclibc</td><td>0.9.31</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		</table>
+		<!-- End 2018.11-01 -->
+		<h2>Toolchain 2018.09-02</h2>
+		<h3 id="2018.09-02NewFeatures">2018.09-02 New Features</h3>
+		<ul>
+		  <li>Add --no-print-map-discarded option to the BFD linker to skip enumeration of garbage-collected sections in linker map file output (PP118216).</li>
+		  <li>Add support for XBurst MXU extension to the assembler.</li>
+		</ul>
+		<h3 id="2018.09-02BugFixes">2018.09-02 Bug Fixes</h3>
+		<ul>
+		  <li>Fix branch in delay slot error in MSA division built-in.</li>
+		  <li>Fix raw instruction dump in GDB disassembly for compressed (MIPS16/microMIPS) ISAs (PP117871).</li>
+		  <li>Fix incorrect MIPS16 disassembly due to constant pools (PP118427).</li>
+		  <li>Fix handling of bit-clear operations for mips64 to be mode sensitive.</li>
+		  <li>Eliminate unnecessary copying when zeroing DSP accumulator (PP118614).</li>
+		  <li>Fix interrupt handling of count register overflow in low-level HAL timer interfaces.</li>
+		</ul>
+		<h3 id="2018.09-02OtherChanges">2018.09-02 Other Changes</h3>
+		<ul>
+		  <li>Introduce optimized C versions of memcpy/memset for MIPS architectures with improved pre-fetching logic.</li>
+		  <li>Improve performance of strcmp in C library.</li>
+		  <li>Include GOLD for MIPS as an alternative to the GNU BFD linker.</li>
+		  <li>Provide QEMU binary and sources as part of the toolkit release package.</li>
+		</ul>
+		<h3 id="2018.09-02KnownIssues">2018.09-02 Known issues</h3>
+		<ul>
+		  <li>MIPS BFD linker can't handle PCHI16 relocations for negative offsets larger than 32k.</li>
+		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
+		  <li><i>strcmp()</i> gives incorrect result under the following conditions:
+		    <ul><li>First string is a prefix of second AND</li>
+		      <li>Length of first string is 1 less than a multiple of 4 AND</li>
+		      <li>The first distinct character in the second string is extended ASCII (that is > 0x7f).</li>
+		      </ul></li>
+		</ul>
+		<h3 id="2018.09-02CompVer">2018.09-02 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.29</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>6.3.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">glibc</td><td>2.20</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>2.5.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>7.9.1</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">uclibc</td><td>0.9.31</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>3.0.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.28</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		</table>
+		<!-- End 2018.09-02 -->
+		<h2>Toolchain 2017.10-08</h2>
+		<h3 id="2017.10-08NewFeatures">2017.10-08 New Features</h3>
+		<ul>
+		  <li>Added microMIPS, big endian, soft-float and hard-float libaries to mips-mti-elf tools.</li>
+		  <li>Added support for the __builtin_mips_cache intrinsic for MIPS16e2.</li>
+		  <li>Added support for quoted paths in the GDB dump memory command.</li>
+		</ul>
+		<h3 id="2017.10-08BugFixes">2017.10-08 Bug Fixes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2017.10-08OtherChanges">2017.10-08 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2017.10-08KnownIssues">2017.10-08 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2017.10-08 -->
+		<h2>Toolchain 2017.10-07</h2>
+		<h3 id="2017.10-07NewFeatures">2017.10-07 New Features</h3>
+		<ul>
+		<li>Add pre-built support libraries for big endian MIPS64R6 n32 and n64 soft-float Linux ABIs.</li>
+		<li>Add a new hook in boot code called __boot_exit_hook that is called prior to halting.</li>
+		</ul>
+		<h3 id="2017.10-07BugFixes">2017.10-07 Bug Fixes</h3>
+		<ul>
+		<li>Backport fix for FSF PR c++/80593. Do not warn about strict aliasing violations for accesses to alias-set zero memory.</li>
+		<li>Fix illegal code generation for DSP accumulator registers with MIPSR6 and DSP.</li>
+		<li>Fix the order of operands used in builtins for msa_maddv_b, msa_maddv_h, msa_maddv_w and msa_maddv_d.</li>
+		<li>Support disassembly of interAptiv-MR2 MIPS16e extensions in GDB.</li>
+		<li>Fix C++ exception handling eh_frame corruption when using the uhi32.ld linker script.</li>
+		<li>Fix LMA layout when using the __xip variant of uhi32.ld.</li>
+		</ul>
+		<h3 id="2017.10-07OtherChanges">2017.10-07 Other Changes</h3>
+		<ul>
+		<li>Optimise away pairs of move instructions where the intermediate register is immediately dead.</li>
+		<li>Reduce stack size used for initial boot code to a minimum to avoid unnecessary impact on whole-program data sizes.</li>
+		<li>Allow cache initialisation to be skipped in reset_predef.S if using HCI.</li>
+		<li>The custom_excpt example has been rewritten to be more reliable and work for all architectures.</li>
+		<li>Rework CM3 cache initialisation code to remember the state of the L2 config between bypass and invalidation.</li>
+		</ul>
+		<h3 id="2017.10-07KnownIssues">2017.10-07 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2017.10-07 -->
+		<h2>Toolchain 2017.10-05</h2>
+		<h3 id="2017.10-05NewFeatures">2017.10-05 New Features</h3>
+		<ul>
+		<li>GCC is updated to version 6.3.0 benefitting from all improvements in that release (<a href="https://gcc.gnu.org/gcc-6/changes.html">GCC 6.3.0 changes</a>).</li>
+		<li>Binutils is updated to version 2.29 benefitting from all improvements in that release.</li>
+		<li>Newlib is updated to version 2.5.0 benefitting from all improvements in that release.</li>
+		<li>Add support for the i6500 architecture with VZ, MSA, CRC and GINV ASEs (-march=i6500).</li>
+		<li>Assembler support for Global INValidate instructions via the -mginv option.</li>
+		<li>Add a new function attribute 'use_hazard_barrier_return' to force the use of JR.HB.  This is useful when performing cache or TLB operations within a function that may affect code fetch.</li>
+		<li>Add a new function attribute 'inline_intermix' to enable the pre-existing -minline-intermix logic to be applied to individual functions. It should be used on the function that may be inlined rather than the function that code is inlined into.</li>
+		<li>Add a new option to assume all scalar load/store operations support unaligned access in MIPSR6 (-munaligned-scalars).</li>
+		<li>Add new Global INValidate options to the GCC driver and pass them to the assembler (-mginv/-mno-ginv).</li>
+		<li>Add a new option to support annotating user-supplied section names with the function or variable name (-munique-sections).</li>
+		<li>Add a new option to support compressing load/store instructions in MIPS16e where a large common factor exists in the constant offset (-mshrink-offsets)</li>
+		<li>Add a new option to specify the behaviour of floating point multiply-add instructions where they diverge from the architecture definition (-mmadd4).</li>
+		<li>Add a new option to prevent the use of floating point indexed load/store instructions (-mlxc1-sxc1).</li>
+		<li>Improve the shrink wrapping optimisation to work in the presence of GP-relative addressing.</li>
+		<li>Add support for the 'la' instruction macro in MIPS16 mode to handle symbols that are out of range of ADDIUPC.</li>
+		<li>Add support to ensure constant pools embedded in MIPS16 functions are disassembled as data instead of text.</li>
+		<li>The HAL now supports providing entry points for EIC mode interrupts.</li>
+		<li>The HAL now supports a new UHI break operation that aids in running on on-target debug stub.</li>
+		<li>The HAL now includes macros to work with PDTRACE CP0 registers.</li>
+		</ul>
+		<h3 id="2017.10-05BugFixes">2017.10-05 Bug Fixes</h3>
+		<ul>
+		<li>Enable VZ ASE by default for i6400.</li>
+		<li>Ensure scheduling does not rewrite memory addresses where doing so would otherwise inhibit load/store bonding.</li>
+		<li>Add missing -mcrc/-mno-crc options to the GCC driver and pass them to the assembler.</li>
+		<li>Fixed a MIPS16e2 bug where a zero would be spuriously negated when being materialised.</li>
+		<li>Fixed a MIPS32R6 DSP bug where a speculatively created MADD/MSUB would cause an ICE when being split to MUL/ADD.</li>
+		<li>Reduce the LSU reservation for MSA loads to be 1 cycle instead of 2.</li>
+		<li>Ensure floating point vector types are returned in memory for the o32 ABI.</li>
+		<li>The HAL cache management functions are rewritten in C code resolving a bug in the cache sizing code.</li>
+		<li>GDB will now disassemble MIPS16E2 extensions when disassembling in MIPS16 mode.</li>
+		<li>Allow addr2line to locate the start of a compressed function without needing to set the ISA mode bit in the requested address.</li>
+		<li>Improve handling of the ISA mode bit in disassembly.</li>
+		</ul>
+		<h3 id="2017.10-05OtherChanges">2017.10-05 Other Changes</h3>
+		<ul>
+		<li>Removed the common epilogue elimination feature (-mepi) and all associated support.</li>
+		<li>Removed the MIPS16 tail optimisation (-mmips16-tail-indirect) and (-mmips16-tail-branch).</li>
+		<li>Remove the MIP32R6, little endian, single float, short double library configuration.</li>
+		<li>Refresh the schedulers for i6400, i6500 and p6600 based on new performance analysis.</li>
+		<li>The interAptiv-MR2 core is now accurately described as a MIPS32R3 core instead of MIPS32R2.</li>
+		</ul>
+		<h3 id="2017.10-05KnownIssues">2017.10-05 Known issues</h3>
+		<ul>
+		<li>One of the new optimisations in GCC 6 can lead to a code size increase up to 1% but can be disabled using -fdisable-rtl-loop2_invariant.</li>
+		</ul>
+		<!-- End 2017.10-05 -->
+		<h2>Toolchain 2016.05-08</h2>
+		<h3 id="2016.05-08NewFeatures">2016.05-08 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2016.05-08BugFixes">2016.05-08 Bug Fixes</h3>
+		<ul>
+		<li>Fixed MIPS16 code generation bug when using the GCC extension for taking the address of a label in conjunction with -mcode-readable=yes.</li>
+		<li>Fixed code generation bug where loads from the local stack frame may be scheduled after the stack pointer adjustment in an epilogue.</li>
+		</ul>
+		<h3 id="2016.05-08OtherChanges">2016.05-08 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2016.05-08KnownIssues">2016.05-08 Known issues</h3>
+		<ul>
+		<li>There is a 0.5% increase in code size for MIPS32 due to the bug fixes applied in this release.</li>
+		</ul>
+		<!-- End 2016.05-08 -->
+		<h2>Toolchain 2016.05-06</h2>
+		<h3 id="2016.05-06NewFeatures">2016.05-06 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2016.05-06BugFixes">2016.05-06 Bug Fixes</h3>
+		<h4>GCC</h4>
+		<ul>
+		<li>Fixed MIPS16e2 code generation bug when assigning zero to fields of a packed structure.</li>
+		<li>Fixed MIPS16e2 inline asm constraint bug when small data variables are used with the "m" constraint.</li>
+		<li>Fixed -march=interaptiv-mr2 + -mips16 silent code generation bug when generating COPYW through peephole optimisation.</li>
+		<li>Fixed -march=interaptiv-mr2 + -mmicromips code generation bug where SAVE/RESTORE instructions were assumed to exist.</li>
+		<li>Added missing pre-processor macro to indicate the MIPS16e2 ASE is enabled. __mips_mips16e2.</li>
+		</ul>
+		<h4>SMALLCLIB</h4>
+		<ul>
+		<li>Fixed missing null terminator on printf variants that write to character strings.</li>
+		</ul>
+		<h4>LIBHAL</h4>
+		<ul>
+		<li>Fixed annotation of support function prototypes to remove the nomips16 attribute for non MIPS16 builds.</li>
+		</ul>
+		<h4>BINUTILS</h4>
+		<ul>
+		<li>Fixed incorrect JALX encoding for microMIPS during assembly.</li>
+		</ul>
+		<h3 id="2016.05-06OtherChanges">2016.05-06 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2016.05-06KnownIssues">2016.05-06 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2016.05-06 -->
+		<h2>Toolchain 2016.05-03</h2>
+		<h3 id="2016.05-03NewFeatures">2016.05-03 New Features</h3>
+		<h4>GCC</h4>
+		<ul>
+		<li>Added support for MSA auto-vectorisation with code that performs memory accesses with a stride of 3.</li>
+		<li>Added a little-endian, soft-float, MIPS16e (MIPS32R2) library variant.</li>
+		<li>Added support for using -mblockmov-limit to set the size limit in bytes for MIPS16e2 inline memcpy.</li>
+		<li>Performance improvement for P5600 to avoid the use of integer MADD instructions by default.</li>
+		</ul>
+		<h4>BINUTILS</h4>
+		<ul>
+		<li>Added support for the LLWP family of instructions that provided paired word or doubleword atomic operations.</li>
+		<li>Added support for copying symbol flags when creating symbols in a linker script using a ternary operator. This, for example, will retain the micromips or mips16 flags.</li>
+		</ul>
+		<h4>GDB</h4>
+		<ul>
+		<li>Added support for displaying the BADVADDR register as 64-bit if the target description supports 64-bit BADVADDR. This feature assists in debugging exceptions with XPA enabled.</li>
+		</ul>
+		<h4>NEWLIB</h4>
+		<ul>
+		<li>Set all debug information in the HAL to toolchain/share/mips/* where 'toolchain' should be mapped by a debugger to the root of the toolchain install folder.</li>
+		<li>Added support for uhi_assert which is a resumable form of assert (mips/hal.h).</li>
+		</ul>
+		<h3 id="2016.05-03BugFixes">2016.05-03 Bug Fixes</h3>
+		<h4>GCC</h4>
+		<ul>
+		<li>Fixed an ICE that was allowing MADD/MSUB optimisations to apply to MIPS32R6.</li>
+		<li>Fixed an issue preventing bonded load/store instructions from being placed in forbidden slots.</li>
+		<li>Fixed an issue preventing the P6600 instruction scheduler from running.</li>
+		<li>Fixed an incorrect code generation bug when combining -mframe-header-opt with load/store bonding.</li>
+		</ul>
+		<h4>BINUTILS</h4>
+		<ul>
+		<li>Fixed an issue that led to all enabled ASEs being disabled whenever a .set mipsxxx directive was used.</li>
+		<li>Fixed an issue where branches to weak symbols would fail to resolve at link time.</li>
+		</ul>
+		<h4>NEWLIB</h4>
+		<ul>
+		<li>Move the __first_boot variable into the data section instead of text.</li>
+		</ul>
+		<h3 id="2016.05-03OtherChanges">2016.05-03 Other Changes</h3>
+		<ul>
+		<li>Glibc documentation is now available in share/doc/glibc/libc.pdf for GNU/Linux toolchains.</li>
+		</ul>
+		<h3 id="2016.05-03KnownIssues">2016.05-03 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2016.05-03 -->
+		<h2>Toolchain 2016.05-01</h2>
+			<h3 id="2016.05-01NewFeatures">2016.05-01 New Features</h3>
+			<h4>GCC</h4>
+				<ul>
+					<li>New architecture -march=interaptiv-mr2 supported.</li>
+					<li>New MIPS16e2 ASE -mmips16e2 supported.</li>
+					<li>New command line option -mfunc-opt-list enables function level attributes to be specified via a text file.</li>
+					<li>New command line option -minline=intermix allows code compression attributes to be ignored when inlining functions</li>
+					<li>New command line option -mepi reduces code size in MIPS32 by jumping to common function epilogue stubs. Only supported on bare metal.</li>
+					<li>New command line option -msdata-opt-list enabled data items to be forced into the small data section via a text file.</li>
+					<li>New command line option -msdata-num assists with creating multiple distinct small data regions in multi-threaded bare metal applications.</li>
+					<li>New command line option -mmips16-tail-branch enables tail calls in MIPS16 code.</li>
+				
+				</ul>
+			
+				
+			
+			<h3 id="2016.05-01BugFixes">2016.05-01 Bug Fixes</h3>
+				<h4>GCC</h4>
+					<ul>
+						<li>Fixed an internal compiler error when building MIPS16e code with -mcode-readable=no.</li>
+					</ul>
+					
+				<h4>Newlib</h4>
+						<ul>
+							<li>Fixes to macros in mips/m32c0.h: C0_ENTRYHI64_VPN2_MASK, C0_ENTRYHI_VPN2_MASK, C0_ENTRYHI_VPN2_BITS, C0_ENTRYHI_VPN2X_SHIFT</li>
+							<li>Fixes to mips_tlbinvalall to support Config4[IE] = 1.</li>
+						</ul>
+						
+			<h3 id="2016.05-01OtherChanges">2016.05-01 Other Changes</h3>
+				<ul>
+					<li>Removed C++ support libraries from SmallClib library variants. These were spuriously included in previous releases.</li>
+					<li>Removed dejagnu from the toolchain. This was spuriously included in previous releases.</li>
+				</ul>
+						
+			<h3 id="2016.05-01KnownIssues">2016.05-01 Known Issues</h3>
+			
+			<p>The GDB text user interface 'TUI' will not work unless the terminfo database is explicitly specified. This can be resolved by either setting the TERMINFO environment variable to /usr/share/terminfo or creating a symlink from ~/.terminfo to /usr/share/terminfo.</p>
+		
+		<h2>Toolchain 2015.10-04</h2>
+			<h3 id="2015.10-04NewFeatures">2015.10-04 New Features</h3>
+			<h4>GCC</h4>
+				<ul>
+					<li>Sync MSA implementation with upstream GCC submission.</li>
+					
+					<li>Guarantee that floating point mode values never leave FPRs except for argument passing.</li>
+					<li>Guarantee that integer mode values never leave GPRs except for floating point conversions.</li>
+					
+					<li>Add a scheduler for the M6200 family.</li>
+					
+					<li>Infer <code>-mnan=2008 </code>for smalllib and tinylib which do not support legacy NaN variants.</li>
+					<li>Add support for <code>-mframe-header-opt</code> which can remove instructions from the prologue for O32.</li>
+					<li>As a performance enhancement prevent the delay slot filler backwards filling delay slots when compact branches are available. This affects MIPS32R6 and MIPS64R6.</li>
+					<li>Ensure JRC is not available to microMIPS when <code>-mcompact-branches=never</code>.</li>
+					<li>Fully deprecate branch likely instructions by not generating them even for -Os code when targeting a generic ISA. Core specific code generation will still use branch likely</li>
+					<li>Improve selection of compact branches and delay slot branches when processing back-to-back branches</li>
+					<li>Add support for the P6600 core <code>-march=p6600</code>.</li>
+					<li>Add support for 64-bit load/store bonding for I6400 and P6600 cores</li>
+					
+					<li>Improve register renaming to remove unnecessary moves</li>
+					<li>Ensure that correct libraries are selected when using <code>-mabi=32</code> and <code>-march=&#60;64-bit arch&#62;</code></li>
+					<li>Update the GCC driver to recognise all possible architecture variants including those which are not supported by this release. This prevents confusing error messages when targeting an unsupported variant</li>
+					<li>Restructure multilib layout for bare metal tools so that it follows the same pattern as Linux tools</li>
+					<li>Move the default multilib out of the top level directory and into a folder named similarly to other library variants</li>
+					
+					<li>Increase the limit for inlining a memcpy when generated as straight line code</li>
+					<li>Support load/store bonding of inline memcpy and frame save/restore sequences</li>
+					
+					<li>Improve the jump threading implementation using backports from upstream GCC</li>
+				
+				</ul>
+		
+		<h4>BINUTILS</h4>
+	 <ul>
+		<li>Add support for MIPS32R6/microMIPSR6 SIGRIE.</li>
+		<li>Remap the MOVE instruction to use OR instead of ADDU/DADDU.</li>
+		<li>Add support for the P6600 core: <code>-march=p6600</code>.</li>
+		<li>Record MIPS64R6 as an extension of MIPS32R6.</li>
+		<li>Ensure that ASEs present in a specific core are made available by default.</li>
+		
+		<li>Update the disassembler to mask the LSB when disassembling MIPS16 or microMIPS.</li>
+	</ul>
+
+			<h4>GDB</h4>
+				<ul>
+					<li>Update all instruction set changes from binutils.</li>
+				</ul>
+			 
+			<h4>Newlib</h4>
+				<ul>
+					<li>Add macros to access:</li>
+						<ul>
+							<li>VPCONTROL</li>
+							<li>HWENA_XNP</li>
+							<li>HWENA_PERFCNT</li>
+							<li>BEVVA_BASE</li>
+							<li>BEVVA_MASK</li>
+							<li>CNF5_XNP</li>
+							<li>C0_DEBUGCTXTID</li>
+							<li>C0_BEVVA</li>
+						</ul>
+					
+					<li>Support EHINV in TLB initialisation code.</li>
+					
+				</ul>
+			
+			<h3 id="2015.10-04BugFixes">2015.10-04 Bug Fixes</h3>
+				<h4>GCC</h4>
+				<ul>
+				<li>-mmsa no longer requires <code>-mfp64 </code>to be used explicitly.</li>
+				<li>Fix the SB1 scheduler to correctly represent the data bypass on stores.</li>
+				<li>Fix the M5100 family scheduler to correctly represent the latency of a load.</li>
+				<li>Fix register renaming to prevent increasing the live register set in an interrupt function.</li>
+				<li>Fix the delay slot filler to prevent filling delay slots with bad instructions when processing gcc_unreachable or similar dead-end code paths</li>
+				<li>Fix an ICE for MIPS16 with the 'X' constraint</li>
+				<li>Remove MSA COPY_U.D instruction which is fully redundant and use COPY_S.D instead. Also prevent use of MSA COPY_U.W when copying 32-bit values and instead use COPY_S.W to maintain consistency of sign extended data</li>
+				</ul>
+				
+				<h4>BINUTILS</h4>
+				 <ul>
+					
+					<li>Move MSA COPY_U.W to MSA64 and remove COPY_U.D.</li>
+					
+				</ul>
+				
+				<h4>Newlib</h4>
+				<ul>
+					
+					<li>Fix linker scripts to ensure the address of _fdata and the first data item match.</li>
+					
+					<li>Update malta32-yamon.ld to match uhi32.ld.</li>
+					<li>A bug with TLB initialisation in boot code has been resolved when booting on a core with a BAT MMU.</li>
+					<li>The mt.h header includes fixes to support accessing $1 in alternate register sets via _m32c0_mttgpr and _m32c0_mftgpr without assembler warnings.</li>
+				</ul>
+
+		<h3 id="2015.10-04OtherChanges">2015.10-04 Other Changes</h3>
+				<ul>
+					<li>None</li>
+				</ul>
+
+		<h3 id="2015.10-04KnownIssues">2015.10-04 Known issues</h3>
+				<ul>
+					<li>None</li>
+				</ul>
+
+		
+		
+		<h2>Toolchain 2015.06-05</h2>
+			<h3 id="2015.06-05NewFeatures">2015.06-05 New Features</h3>
+			<h4>GCC</h4>
+		<ul>
+			<li>Support for microMIPSR6 has been added.</li>
+			<li>The default scheduler for -mips32r6 is now I6400.</li>
+			<li>New compile flags added <code>-march=interaptiv, -march=m5100, -march=m5101, -march=m6201</code>. The latter two are soft-float by default.</li>
+			<li>Enable inline memcpy for R6 when source and destination addresses are at least 2-byte aligned. Previously source and destination had to be word aligned (4-byte for o32 and 8-byte for n32/n64).</li>
+			<li>Set microMIPSR2 to use <code>-mnan=2008</code> by default.</li>
+			<li>Add new attributes for controlling compiler generated interrupt handlers. Vectored interrupt mode is now supported with nesting.</li>
+			<li>Restructure the sysroot layout for mips-mti-linux-gnu and mips-img-linux-gnu to have a sysroot for each ABI variant per architecture. These sysroots sit side by side rather than nested and each contain a set of o32/n32 and n64 libraries.</li>
+
+		</ul>
+
+		<h4>BINUTILS</h4>
+		<ul>
+			<li>Support debugging shared libraries with PIE excutables.</li>
+			<li>Support for microMIPSR6 has been added.</li>
+			<li>Support for the MIPSR6 LLX family of instructions has been added.</li>
+			<li>Disallowed microMIPSR6 interlinking with MIPSR6 for direct jumps. Indirect
+		  jumps between ISAs are allowed.</li>
+			<li>Support branch auto-conversion from delay slot branches to compact branches
+		  for microMIPSR6.  This will only happen for branches outside of noreorder regions or for non-call (not and-link) branches that have a NOP in their delay slot when inside a noreorder region. I.e. auto-conversion will not happen for either of these scenarios:
+		<pre>
+		  .set noreorder
+		  beqz $4, label
+		  addiu $5, $5, 1
+		  .set reorder
+		  .set noreorder
+		  jal label
+		  nop
+		  .set reorder
+		</pre>
+		  <p>For code that needs to be compatible with MIPSR5, MIPSR6, microMIPSR2 and microMIPSR6 then the use of delay slot branches is required but use cases like the two above must be avoided. It is rarely essential to manually fill a delay slot when the preceeding instruction can easily be put in the delay  slot automatically by the assembler.</p>
+		  <p>For code that needs no compatibility with microMIPSR2 or MIPSR2 then explicit use of compact branches is recommended although there are some instructions in MIPSR6 that only have delay slot branch forms so consideration must be given for these cases. The instructions affected are BC1[NE|EQ]Z and MSA branch instructions.</p></li>
+		<li>Stricter checks on branch/jump between MIPS and microMIPS labels to prevent executing code in the wrong mode.</li>
+		<li>The toolchain ensures all MIPSR6 PC-relative relocations are symbol rather than section-relative to allow for link time relaxations.</li>
+		<li>Added <code>-march=interaptiv, -march=m5100, -march=m5101 </code>and <code>-march=m6201</code> options.</li>
+		<li>Added DVP, EVP aliases with no argument that map to DVP 0, EVP 0.</li>
+		<li>Added support for a register select on RDHWR for MIPSR6</li>
+		</ul>
+
+		<h4>NEWLIB</h4>
+		<ul>
+			<li>Added support for bootable applications.</li>
+			<li>Updated to UHI 1.1 spec.</li>
+			<li>Added examples for HAL functionality. See 'HAL examples' in the <a href="../Toolchain/MIPS_Toolchain_Codescape_GNU_Tools_for_MIPS_Programmers_Guide_1.1.92.pdf" target="_blank">MIPS Toolchain GNU Tools for MIPS - Programmer's Guide</a> for details.</li>
+			<li>Added makefile fragment for bare metal applications. See 'HAL makefile fragment' in the <a href="../Toolchain/MIPS_Toolchain_Codescape_GNU_Tools_for_MIPS_Programmers_Guide_1.1.92.pdf" target="_blank">MIPS Toolchain GNU Tools for MIPS - Programmer's Guide</a> for details.</li> 
+			<li>Specified 4-byte alignment on asm.h code section macros.</li>
+			<li>Removed atomic.h header, use compiler atomic intrinsics instead.</li>
+			<li>Removed all support for pre-MIPS32R2 cores.</li>
+			<li>HAL headers are now C++ safe.</li>
+			<li>Add context structure definitions and accessors.</li>
+			<li>Major update of all COPRO0 register access macros. See 'CP0 support macros/functions' in the <a href="../Toolchain/MIPS_Toolchain_Codescape_GNU_Tools_for_MIPS_Programmers_Guide_1.1.92.pdf" target="_blank">MIPS Toolchain GNU Tools for MIPS - Programmer's Guide</a> for details.</li>
+			<li>All HAL code placed under standard BSD license.</li>
+			<li><code>mips_init_tlb </code>and <code>mips_init_cache </code>removed.</li>
+			<li>XPA support for TLB management.</li>
+			<li>Removed processor-specific COPRO0 headers.</li>
+			<li>Support for microMIPS R6 added.</li>
+		      </ul>
+			
+		<h4>GLIBC</h4>
+
+			<ul>
+				<li><code>cdefs.h</code> is now useable with clang.</li>
+				<li>Removed all unncessary .set noreorder directives and use the assembler delay slot filling logic instead. This is a pre-requisite for microMIPSR6.</li>
+				<li>Support for microMIPS R6 added.</li>
+				<li>Correct encoding for LL/SC is used for all R6 architectures.</li>
+			</ul>
+				
+		<h4>GDB</h4>
+			<ul>
+				<li>Added support for MIPSR6 compact branches. Use <code>-mcompact-branches=[none|optimal|always]</code> to use this feature. The default setting is 'optimal' which will use compact branches when delay slots do not get filled.</li>
+				<li>Support for microMIPS R6 added.</li>
+				<li>Added support for o32 FP64.(This is built to assume that Linux kernel prctl option PR_SET_FP_MODE has value 45 and PR_GET_FP_MODE has value 46.)</li>
+				<li>Add support for MSA.</li>
+				<li>Support debugging shared libraries with PIE excutables.</li>
+			</ul>		
+			
+
+		<h4>UCLIBC</h4>
+			<ul>
+				<li>Updated to snapshot from 15th March 2015</li>
+				<li>Long paths are usable when compiling uclibc.</li>
+			</ul>	
+
+		<h3 id="2015.06-05BugFixes">2015.06-05 Bug Fixes</h3>
+				<ul>
+					<li>None</li>
+				</ul>
+
+		<h3 id="2015.06-05OtherChanges">2015.06-05 Other Changes</h3>
+				<ul>
+					<li>None</li>
+				</ul>
+
+		<h3 id="2015.06-05KnownIssues">2015.06-05 Known issues</h3>
+				<ul>
+					<li>None</li>
+				</ul>
+		</div>
+
+
+    </div>
+	<br>
+    <div id="FooterMainContainer">
+		<div id="FooterContainer">
+			<div class="footerlogo">
+				<a href="http://www.mips.com" target="_blank"><img src="./images/MIPS_master_logo.png" width="100%" height="100%" /></a>
+			</div>
+			<div class="copyright">&copy; 2019 MIPS Tech, LLC. All rights reserved</div>
+		</div>
+	</div>
+	
+	
+	
+	
+</body>
+
+</html>

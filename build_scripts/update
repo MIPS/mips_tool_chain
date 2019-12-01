@@ -1,0 +1,13 @@
+#!/bin/bash
+
+wdr=$(readlink -f `dirname "$0"`)
+. ${wdr}/buildrc
+
+parse_args "$@"
+
+for i in $components
+do
+	s=`find_list_entry $i "${src_list[@]}"`
+	check_src $s ${src_dir} $i
+        update_src $s ${src_dir} $i || exit 1
+done

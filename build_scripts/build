@@ -1,0 +1,36 @@
+#!/bin/bash
+
+wdr=$(readlink -f `dirname "$0"`)
+. ${wdr}/buildrc
+
+all_args="$@"
+parse_args "$@"
+
+if [ ! -d $bld_dir ] ; then
+    if [ "$preview" != "yes" ] ; then
+	mkdir $bld_dir
+    fi
+fi
+
+if [ "$components" = "" ] ; then
+	echo "Error: No component was specified for testing."
+	exit 1
+fi
+
+for i in $components
+do
+    case $i in 
+	gmp|mpfr|mpc|binutils|binutils-gdb|gcc|newlib|gdb|qemu)
+	    build_component $i ;;
+	glibc | glibc_multilibs)
+	    build_system_libs ;;
+	uclibc | uclibc_multilibs)
+	    build_system_libs ;;
+	sysroot)
+	    build_system_libs ;;
+	linux_headers)
+	    build_linux_headers ;;
+	*)
+	    echo "Do not know how to build $i" ; exit 1 ;;
+    esac
+done

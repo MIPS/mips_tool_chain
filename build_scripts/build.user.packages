@@ -1,0 +1,157 @@
+#!/bin/bash
+
+# This is the script used to build the customer GCC packages for linux.
+# It in turn uses build_toolchain to do all the real work, this script just
+# sets up the build, source, and install locations to be used when calling
+# build_toolchain.
+
+# It should be run on a 64 bit linux box that has the mingw64 tools installed
+# on it.  TOPDIR should be changed to point to the directory where this script
+# is installed.  Due to command length issues in mingw the path used for TOPDIR
+# should be as short as possible, otherwise the windows build will fail.
+
+TOPDIR=/directory
+TARGET=mips-mti-linux-gnu
+
+
+SRCLIST="--src=gcc:ssh://git@github.com/MIPS/gcc.git \
+         --branch=gcc:mips_rel/4_9_2/master \
+	 --src=binutils:ssh://git@github.com/MIPS/binutils-gdb.git \
+	 --branch=binutils:mips_rel/2_25/master \
+	 --src=gdb:ssh://git@github.com/MIPS/binutils-gdb.git \
+	 --branch=gdb:mips_rel/7_7/master \
+	 --src=glibc:ssh://git@github.com/MIPS/glibc.git \
+	 --branch=glibc:mips_rel/2_20/master \
+	 --src=uclibc:ssh://git@github.com/MIPS/uclibc.git \
+	 --branch=uclibc:mips_rel/2014_06_06/master"
+
+SYSROOT_TAR=$TOPDIR/sysroot.tar.bz2
+G="$SRCLIST --target=$TARGET --jobs=10"
+
+cd $TOPDIR
+
+# Get all the sources
+
+b/build_toolchain update $G gcc binutils expat gdb glibc uclibc
+b/build_toolchain update $G gmp mpfr mpc
+
+# Build binutils & GCC (initial) to create sysroot and then build sysroot.
+
+
+if [ ! -f $SYSROOT_TAR ] ; then
+  INSTALL=$TOPDIR/sysroot-tools
+  OBJ=$TOPDIR/obj-sysroot
+  INSTALL_SYSROOT=$TOPDIR/sysroot
+
+  G2="--path=$INSTALL/bin --build=$OBJ --prefix=$INSTALL --sysroot=$INSTALL_SYSROOT"
+
+  b/build_toolchain build $G $G2 binutils || exit 1
+  b/build_toolchain build $G $G2 initial_gcc || exit 1
+  b/build_toolchain build $G $G2 linux_headers || exit 1
+  b/build_toolchain build $G $G2 sysroot || exit 1
+
+  tar --create --file sysroot.tar sysroot
+  bzip2 sysroot.tar
+fi
+
+# End of sysroot build, now build 64 bit linux toolchain using the sysroot.
+
+if [ ! -f linux64.tar.bz2 ] ; then
+  INSTALL=$TOPDIR/linux64
+  HOSTINSTALL=$TOPDIR/linux64-host
+  OBJ=$TOPDIR/obj-linux64
+  INSTALL_SYSROOT=$INSTALL/sysroot
+
+  mkdir -p $INSTALL
+  (cd $INSTALL; tar -xvf $SYSROOT_TAR)
+  G2="--build=$OBJ --prefix=$INSTALL --sysroot=$INSTALL_SYSROOT"
+  G2="$G2 --hostlibs=$HOSTINSTALL"
+  HOSTG="--build=$OBJ --prefix=$HOSTINSTALL --jobs=3"
+
+  b/build_toolchain build $G $G2 binutils || exit 1
+  b/build_toolchain build $G $G2 gcc || exit 1
+  b/build_toolchain build $HOSTG expat || exit 1
+  b/build_toolchain build $G $G2 gdb || exit 1
+
+  tar --create --file linux64.tar linux64
+  bzip2 linux64.tar
+fi
+
+# End of 64 bit linux build, now build 32 bit linux toolchain.
+
+if [ ! -f linux32.tar.bz2 ] ; then
+  INSTALL=$TOPDIR/linux32
+  HOSTINSTALL=$TOPDIR/linux32-host
+  OBJ=$TOPDIR/obj-linux32
+  INSTALL_SYSROOT=$INSTALL/sysroot
+
+  mkdir -p $INSTALL
+  (cd $INSTALL; tar -xvf $SYSROOT_TAR)
+  G2="--build=$OBJ --prefix=$INSTALL --sysroot=$INSTALL_SYSROOT --32bit-build"
+  G2="$G2 --hostlibs=$HOSTINSTALL"
+  HOSTG="--build=$OBJ --prefix=$HOSTINSTALL --jobs=3"
+
+  b/build_toolchain build $G $G2 binutils || exit 1
+  b/build_toolchain build $G $G2 gcc || exit 1
+  b/build_toolchain build $HOSTG expat || exit 1
+  b/build_toolchain build $G $G2 gdb || exit 1
+
+  tar --create --file linux32.tar linux32
+  bzip2 linux32.tar
+fi
+
+# End of 32 bit linux build, now build Windows package using mingw64.
+
+if [ ! -f windows64.tar.bz2 ] ; then
+  LINUX_MIPS_CC_DIR=$TOPDIR/linux64/bin
+  INSTALL=$TOPDIR/windows64
+  HOSTINSTALL=$TOPDIR/windows64-host
+  OBJ=$TOPDIR/obj-windows64
+  INSTALL_SYSROOT=$INSTALL/sysroot
+
+  MINGW_PREFIX=x86_64-w64-mingw32
+  if [ ! -x /usr/bin/$MINGW_PREFIX-gcc ] ; then
+    echo "No mingw compiler found, cannot build windows package."
+    exit 1
+  fi
+
+  mkdir -p $INSTALL
+  (cd $INSTALL; tar -xvf $SYSROOT_TAR)
+  G2="--path=$LINUX_MIPS_CC_DIR --build=$OBJ --prefix=$INSTALL --sysroot=$INSTALL_SYSROOT"
+  G2="$G2 --hostlibs=$HOSTINSTALL --host=$MINGW_PREFIX"
+  HOSTG="--build=$OBJ --prefix=$HOSTINSTALL --jobs=3"
+
+  b/build_toolchain build $G $G2 binutils || exit 1
+  b/build_toolchain build $G $G2 gcc || exit 1
+  b/build_toolchain build $HOSTG expat || exit 1
+  b/build_toolchain build $G $G2 gdb || exit 1
+
+  # Before tarring up the windows package rename some files.  These files
+  # have names the same as files with lower case letters and cause problems
+  # on NTFS filesystems where case is not recognized.
+
+  FILELIST="sysroot/usr/include/linux/netfilter/xt_MARK \
+	  sysroot/usr/include/linux/netfilter/xt_RATEEST \
+	  sysroot/usr/include/linux/netfilter/xt_DSCP \
+	  sysroot/usr/include/linux/netfilter/xt_TCPMSS \
+	  sysroot/usr/include/linux/netfilter_ipv4/ipt_TTL \
+	  sysroot/usr/include/linux/netfilter_ipv4/ipt_ECN \
+	  sysroot/usr/include/linux/netfilter_ipv6/ip6t_HL \
+	  sysroot/uclibc/usr/include/linux/netfilter/xt_MARK \
+	  sysroot/uclibc/usr/include/linux/netfilter/xt_RATEEST \
+	  sysroot/uclibc/usr/include/linux/netfilter/xt_DSCP \
+	  sysroot/uclibc/usr/include/linux/netfilter/xt_TCPMSS \
+	  sysroot/uclibc/usr/include/linux/netfilter_ipv4/ipt_TTL \
+	  sysroot/uclibc/usr/include/linux/netfilter_ipv4/ipt_ECN \
+	  sysroot/uclibc/usr/include/linux/netfilter_ipv6/ip6t_HL"
+
+  for f in $FILELIST
+  do
+	if [ -f ${INSTALL}/${f}.h ] ; then
+		mv ${INSTALL}/${f}.h ${INSTALL}/${f}_.h
+	fi
+  done
+
+  tar --dereference --hard-dereference --create --file windows64.tar windows64
+  bzip2 windows64.tar
+fi

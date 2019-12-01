@@ -1,0 +1,17 @@
+
+R=/mips/arch/overflow/codesourcery/mips-sde-elf/lite/release
+CSDIR=$R/2013.05-35/Linux/mips-sde-elf
+MYDIR=$1
+
+if [ ! -d $MYDIR ]
+then
+	echo "No directory given"
+	exit
+fi
+
+cd $CSDIR
+find . -type f -print | grep -e malta-yamon.ld -e libcs3 | grep -v -e '/64/' -e micromips | while read f
+do
+	g=`echo $f | sed 's,el/mips16,mips16/el,'`
+	cp $f $MYDIR/mips-mti-elf/$g
+done

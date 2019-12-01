@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Codescape GNU Toolchain</title>
+	<meta charset="UTF-8" />
+	<link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="icon" type="image/png" href="./images/mips-icon.png">
+</head>
+
+<body>
+	<div id="GlobalHeaderContainer">
+		<div id="GlobalHeader">
+			<div class="logo">
+				<a href="https://www.mips.com/develop/tools/" target="_blank"><img src="./images/MIPS_Full_Wht.png" width="60%" height="60%" /></a>
+				
+</div>
+			<div class="sitetitle">Codescape GNU Toolchain</div>
+		</div>
+	</div>
+	<div id="NavContainer">
+		<nav>
+			<div class="navlink">
+				<a href="index.html">Home</a>
+			</div>
+			<div class="navlink">
+				<a href="support.html">Support</a>
+			</div>
+			<div class="navlink">
+				<a href="releasenotes.html" class="current">Release Notes</a>
+			</div>
+			<div class="navlink">
+				<a href="downloads.html" >Downloads</a>
+			</div>
+			<div class="navlink">
+				<a href="license.html">License Agreements</a>
+			</div>
+		</nav>
+	</div>
+
+	<div class="content">	
+	<h1>Release Notes</h1>
+			      
+	    <!-- ${TOC} -->
+	    2019.03-05
+	    &nbsp; <a href="#2019.03-05NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-05BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-05OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-05KnownIssues">Known Issues</a>
+	    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</a>
+	    &nbsp; <a href="#2019.03-03CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.03-05 -->
+	    2019.03-04
+	    &nbsp; <a href="#2019.03-04NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-04BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-04OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-04KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2019.03-04Docs">Documentation</a>
+	    &nbsp; <a href="#2019.03-03CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.03-04 -->
+	    2019.03-03
+	    &nbsp; <a href="#2019.03-03NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-03BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-03OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-03KnownIssues">Known Issues</a>
+	    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+	    &nbsp; <a href="#2019.03-03CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.03-03 -->
+	    2019.03-02
+	    &nbsp; <a href="#2019.03-02NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-02BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-02OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-02KnownIssues">Known Issues</a>
+	    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+	    &nbsp; <a href="#2019.03-02CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.03-02 -->
+	    2019.03-01
+	    &nbsp; <a href="#2019.03-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-01KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2019.03-01Docs">Documentation</a>
+	    <br />
+	    <!-- End 2019.03-01 -->
+	    2018.06-06
+	    &nbsp; <a href="#2018.06-06NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.06-06BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.06-06OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.06-06KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.06-06 -->
+	    2018.06-05
+	    &nbsp; <a href="#2018.06-05NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.06-05BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.06-05OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.06-05KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2018.06-05Docs">Documentation</a>
+	    <br />
+	    <!-- End 2018.06-05 -->
+	    2018.06-04
+	    &nbsp; <a href="#2018.06-04NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.06-04BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.06-04OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.06-04KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.06-04 -->
+	    2018.06-03
+	    &nbsp; <a href="#2018.06-03NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.06-03BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.06-03OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.06-03KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.06-03 -->
+	    2018.06-01
+	    &nbsp; <a href="#2018.06-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.06-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.06-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.06-01KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.06-01 -->
+	    2018.04-02
+	    &nbsp; <a href="#2018.04-02NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.04-02BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.04-02OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.04-02KnownIssues">Known Issues</a>
+	    &nbsp; <a href="#2018.06-01Docs">Documentation</a>
+	    <br />
+	    <!-- End 2018.04-02 -->
+	    2018.03-02
+	    &nbsp; <a href="#2018.03-02NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.03-02BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.03-02OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.03-02KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.03-02 -->
+	    2018.01-01
+	    &nbsp; <a href="#2018.01-01NewFeatures">New Features</a>
+	    &nbsp; <a href="#2018.01-01BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2018.01-01OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2018.01-01KnownIssues">Known Issues</a>
+	    <br />
+	    <!-- End 2018.01-01 -->
+        
+
+		<div id="Toolchain">
+		
+		<!-- ${NOTES} -->
+		<h2>Toolchain 2019.03-05</h2>
+		<h4>Published on October 28, 2019</h4>
+		<h3 id="2019.03-05NewFeatures">2019.03-05 New Features</h3>
+		<ul>
+		<li>None.</li>
+		</ul>
+		<h3 id="2019.03-05BugFixes">2019.03-05 Bug Fixes</h3>
+		<ul>
+		<li>Fix internal error in linker when handling read-only and read-write sections with the same name (PP129290).</li>
+		<li>Make <i>.eh_frame</i> sections in <i>crtbegin</i>/<i>crtend</i> objects read-only by default (PP129290).</li>
+		</ul>
+		<h3 id="2019.03-05OtherChanges">2019.03-05 Other Changes</h3>
+		<ul>
+		<li>Change order of <i>.eh_frame</i> sections in linker scripts so that the terminal marker from <i>crtend.o</i> is at the end of the eh_frame table.</li>
+		</ul>
+		<h3 id="2019.03-05KnownIssues">2019.03-05 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2019.03-05 -->
+		<h2>Toolchain 2019.03-04</h2>
+		<h4>Published on October 18, 2019</h4>
+		<h3 id="2019.03-04NewFeatures">2019.03-04 New Features</h3>
+		<ul>
+		<li>Enable multi-threading in GOLD linker (PP129105).</li>
+		</ul>
+		<h3 id="2019.03-04BugFixes">2019.03-04 Bug Fixes</h3>
+		<ul>
+		<li>Fix memory fault in gold linker for incompatible target archives (PP129151).</li>
+		<li>Fix internal error on GOLD when handling multiply defined symbols within output sections in the linker script. Add new linker option <i>--warn-redefined-symbols</i> to ask GOLD to flag multiple definitions of the same symbol within different output sections (PP129180). This does not affect assignment by modification of a previously defined symbol's value or assignments ocurring between output sections.</li>
+		<li>Align address of merged output sections in GOLD linker to the first input section in a section group instead of the one with the largest alignment (PP129217).</li>
+		<li>Fix bad code generation due to movep optimization and re-enable the optimization by default. It can still be disabled by using the compiler option <i>-mno-opt-movep</i> or restricted by <i>-mno-movep-follow-copy-chains</i> (PP129162).</li>
+		<li>Fix incorrect result in <i>strcmp()</i> where first string is a prefix of second and the first distinct character in the second string is extended ASCII (that is > 0x7f).</li>
+		<li>Fix gdb to allow loading of core-dumps generated by the linux kernel even when the ABI is not specified in the dump header.</li>
+		<li>Fix the CPU simulator to match GDB's expected internal register structure. GDB can now connect to and debug applications on the simulator.</li>
+		<li>Fix bad optimization of switch statements in the reorg pass. This addresses issues with compiling the Linux kernel for nanoMIPS.</li>
+		<li>Fix dissassembly of <i>ALUIPC</i> instruction generated by GDB to match objdump (PP129050).</li>
+		<li>Fix evaluation of <i>EXTW</i> in the CPU simulator for the case when the first source register is also the destination.</li>
+		</ul>
+		<h3 id="2019.03-04OtherChanges">2019.03-04 Other Changes</h3>
+		<ul>
+		<li>Improve GOLD linker performance when handling wild-card patterns matching a very large number of input sections in the linker script (PP129181).</li>
+		<li>Forcibly align the <i>__stack</i> symbol to 16-bytes in start-up code, as required by the P32 ABI (PP129184).
+		<li>Revert register names in GDB from numerical (<i>r0</i>..<i>r31</i>) to conventional (<i>a0</i>, <i>a1</i>..<i>ra</i>) (PP129219).</li>
+		<li>Inhibit the use of unaligned load/store instructions. Introduce compiler option <i>-mload-store-unaligned</i> to re-enable them (PP129237).
+		<ul><li>Tune <i>memcpy()</i> performance for unaligned copies without the use of unaligned load/store instructions.</li></ul></li>
+		</ul>
+		<h3 id="2019.03-04KnownIssues">2019.03-04 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2019.03-04Docs">2019.03-04 Documentation Updates</h3>
+		<ul>
+		<li><a href="../2019.03-04/docs/MIPS_nanoMIPS_Memcpy_Tuning_Whitepaper_00_02.pdf">Tuning memcpy for MIPS Cores - whitepaper, v0.2</a></li>
+		</ul>
+		<!-- End 2019.03-04 -->
+		<h2>Toolchain 2019.03-03</h2>
+		<h4>Published on August 15, 2019</h4>
+		<h3 id="2019.03-03NewFeatures">2019.03-03 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2019.03-03BugFixes">2019.03-03 Bug Fixes</h3>
+		<ul>
+<li>Disable movep optimization by default due to bad code generation (PP129162)
+<ul>
+<li>Add new compiler option <i>-mopt-movep</i> to enable movep code generation with a fix.</li>
+<li>Add new compiler option <i>-mno-movep-follow-copy-chains</i> to be used in conjunction with <i>-mopt-movep</i> to select a more conservative approach to the optimization. This option restricts interactions between adjacent optimization sites.</li>
+		</ul>
+		</ul>
+		<h3 id="2019.03-03OtherChanges">2019.03-03 Other Changes</h3>
+		<ul>
+<li>Include host python interpreter in all toolchain packages</li>
+<li>Include a gdb executable with python scripting support (suffixed by <i>-py</i>) in all toolchain packages. A gdb executable without python support is also provided with the same name as before.</li>
+		</ul>
+		<h3 id="2019.03-03KnownIssues">2019.03-03 Known issues</h3>
+		<ul>
+		<li>Expect regressions in both code size and performance due to disabling of movep optimization. This may be mitigated to some extent by using the <i>-mopt-movep</i> compiler option with careful verification.</li>
+		</ul>
+		<h3 id="2019.03-03CompVer">2019.03-03 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.28 </td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>6.3.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">musl</td><td>1.1.16</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>2.5.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>8.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>2.5.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.30</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">Python</td><td>2.7.16</td>
+		  </tr>
+		</table>
+		<!-- End 2019.03-03 -->
+		<h2>Toolchain 2019.03-02 (defunct, see <a href="#2019.03-02KnownIssues">Known Issues</a>)</h2>
+		<h4>Published on June 26, 2019</h4>
+		<h3 id="2019.03-02NewFeatures">2019.03-02 New Features</h3>
+		<ul>
+<li>Include the the stack smash protection (ssp) library in all toolchain builds.</li>
+		</ul>
+		<h3 id="2019.03-02BugFixes">2019.03-02 Bug Fixes</h3>
+		<ul>
+<li>Fix the traditional archive selector syntax '<i>archive(file)</i>' of the GOLD linker, previously broken due to the fix for PP118564. Both BFD style and GOLD style archive selector syntaxes are now supported.</li>
+<li>Fix size of wrapper functions as designated by the linker option '<i>--wrap</i>' in the ELF symbol table to match the actual size within the object (PP118903).</li>
+<li>Fix assembler crashes due to section mis-alignment during jump-table relaxation. Jump table optimization can now be used along with Link Time Optimization (PP128987).</li>
+<li>Fix disassembly of ALUIPC instructions. Immediate values are now decoded correctly even with the MSB set and relocated values are represented as <i>%pcrel_hi</i> expressions to match the nanoMIPS ISA manual (PP129050).</li>
+<li>Fix the disassembler to correctly sign-extend start and stop address values provided to it (PP129003).</li>
+<li>Fix compiler crash when accessing an unaligned 64-bit global variable.</li>
+<li>Prevent the compiler from generating unaligned accesses to small data within structs.</li>
+		</ul>
+		<h3 id="2019.03-02OtherChanges">2019.03-02 Other Changes</h3>
+		<ul>
+		<li>Include the system-mode QEMU executable for nanoMIPS in all toolchain builds.</li>
+		<li>Retain links in the toolchain tree for CentOS instead of replicating files.</li>
+		</ul>
+		<h3 id="2019.03-02KnownIssues">2019.03-02 Known issues</h3>
+		<ul>
+		<li>The movep optimization in the re-org pass can generate incorrect code in some cases. There is <b>no prior indication</b> when this happens and <b>no work-around</b> for it. Release marked defunct as of August 15th, 2019 and superseded by <a href="../2019.03-03/index.html">v2019.03-03</a>.</li>
+		</ul>
+		<h3 id="2019.03-02CompVer">2019.03-02 Component Versions</h3>
+		<table border=0>
+		  <tr>
+		    <th width="100px">Component</th><th>Based on upstream version</th>
+		  </tr>
+		  <tr>
+		    <td width="100px">binutils</td><td>2.28 </td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GCC</td><td>6.3.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">musl</td><td>1.1.16</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">newlib</td><td>2.5.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">GDB</td><td>8.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">QEMU</td><td>2.5.0</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">gold</td><td>2.30</td>
+		  </tr>
+		  <tr>
+		    <td width="100px">smallClib</td><td>Internal</td>
+		  </tr>
+		</table>
+		<!-- End 2019.03-02 -->
+		<h2>Toolchain 2019.03-01 (defunct, see <a href="#2019.03-01KnownIssues">Known Issues</a>)</h2>
+		<h4>Published on March 29, 2019</h4>
+		<h3 id="2019.03-01NewFeatures">2019.03-01 New Features</h3>
+		<ul>
+<li>Provide non-strict expansions for out-of-range GP-relative sub-word data types (PP118839).
+</li></li><li>Add new compiler option <i>-mssdata</i> to layout 8 and 16-bit data types in to <i>.ssdata</i>|<i>.ssbss</i> for optimized small data area layout. Update linker scripts so that <i>.ssdata</i>|<i>.ssbss</i> precede <i>.sdata</i>|<i>.sbss</i> respectively (PP118839).
+<li>Support the archive selector syntax <i>'archive:file'</i> of the BFD linker in GOLD (PP118564).
+</li><li>Enable compressed jump tables. The compiler option <i>-mjump-table-opt</i> is now enabled by default.</li>
+<li>Add assembler directives and relocations to allow compressed jump tables to be expanded as necessary due to linker relaxation.
+</li><li>Add __atomic expansions of 32-bit fetch-and-operate/operate-and-fetch builtins for logical and arithmetic operations.
+</li><li>Add new linker option <i>--[no-]expand</i> to control extension of the addressable range of PC-relative, GP-relative and GOT-based sequences. This feature is enabled by default.
+</li><li>Linker option <i>--relax</i> now controls all linker relaxations except for those controlled by the <i>--expand</i> option. It is enabled by default, unless explicity disabled by compiler option <i>-mno-relax</i>. The linker will try to relax 32/48-bit instructions in to 16/32-bit where ever possible.
+</li><li>Implement __builtin_frame_address and fix __builtin_return_address expansion.
+</li><li>Support loading/debugging of nanomips-linux core files in GDB.
+</li><li>Generate unaligned multi-word load/store instructions when expanding unaligned memcpy builtin with command-line option <i>-mmulti-memcpy</i>.
+</li><li>New assembler option <i>-mset-dcbits=<pattern></i> to control the bit-pattern used to fill don't-care bits in instructions.
+</li><li>Add <i>unlink</i> and <i>lseek</i> low-level I/O handlers for nanoMIPS gnusim.
+</li><li>Add addressable range expansions for TLS relocations.
+</li>
+		</ul>
+		<h3 id="2019.03-01BugFixes">2019.03-01 Bug Fixes</h3>
+		<ul>
+<li>Prevent access to stack after the stack frame has been released in the epilogue (PP118955).
+</li><li>Fix code generation for lazy-bound calls with shared call sites.
+</li><li>Fix regression in g++.dg/torture/pr69355.C at <i>-O2</i> and <i>-O3</i>.
+</li><li>Fix regression in g++.old-deja/g++.other/comdat5.C
+</li><li>Fix regression in g++.dg/opt/pr56381.C at <i>-O2</i>.
+</li><li>Fix infinite loop in assembler due to reloc minimization.
+</li><li>Fix encoding of <i>BALRSC</i> instruction, so that all don't care bits are set to 0.
+</li><li>Emit lazy-bound call sequences for internal library functions.
+</li><li>Fix GOT offset relocation handling for non-zero addends.
+</li><li>Calculate GOT offset relocations with respect to <i>_gp</i> instead of the start of the <i>.got</i> section.
+</li><li>Fix failing mingw32 GOLD build issue (PR23594 from upstream).
+</li>		</ul>
+		<h3 id="2019.03-01OtherChanges">2019.03-01 Other Changes</h3>
+		<ul>
+<li>Modify linker garbage-collection to discard debug sections related to discarded code sections.
+</li><li>Add optimized (30% faster) strlen implementation to the C library.
+</li><li>Add optimized (50% faster for large blocks) strcpy implementation to the C library.
+</li><li>Eliminate redundant GP-setup/save/restore steps during code generation for functions that don't access any GP or GOT relative symbols.
+</li><li>Eliminate GP-setup/save/restore steps made redundant by link-time symbol resolution and relaxation.
+</li><li>Eliminate redundant address calculation in memcpy builtin expansion (PP118839).
+</li><li>Improve code for zero-extension when type-punning by removing redundant <i>andi</i> instructions.
+</li><li>Eliminate redundant movep instructions by moving movep generation from peephole to reorg.
+</li><li>Improve register allocation cost model for better code compression.
+</li><li>Speed-up assembler execution by optimizing reloc minimization of PIC code.
+</li><li>Add support macros and functions to HAL headers for CP0 register 22, select 3, known as the Core Control register. This was previously called the SRAM Control register and support macros based on the old name are retained for continuity.
+</li><li>Non-strict code transformations controlled by linker option <i>--no-strict-address-modes</i> are now independent of whether the PC-relative addressing mode is enabled.
+</li><li>Use stack pointer for local variables when frame pointer is enabled but not strictly needed.
+</li><li>Relaxation of 32-bit load/store instructions with a 12-bit low-part calculation in to 16-bit instructions causes a slow-down in the linker and is now disabled by default. This may be enabled by the linker option <i>--relax-lo12</i>.
+</li><li>Build memcpy for the nanomips-linux toolchain with <i>-O3</i> to improve performance.
+</li><li>Changes to PIC mode ELF header and linking rules
+<ul><li>Set the PIC bit in the ELF header for position independent objects.
+</li><li>Reset the LINKRELAX bit in the ELF header when generated non-relocatable executables or shared libraries.
+</li><li>Link non-PIC executables as static by default.
+</li><li>Only PIC-enabled objects can be used to produce shared libraries or dynamically linked executables.
+</li><li>Compiler options <i>-fpic</i> and <i>-mno-pcrel</i> are not longer compatible.
+</li></ul>
+</li></ul>
+		<h3 id="2019.03-01KnownIssues">2019.03-01 Known Issues</h3>
+		<ul>
+<li>Size of wrapper functions as designated by the linker option <i>'--wrap'</i> is reported to be larger in the ELF symbol table than the actual size within the object (PP118903).
+</li><li>The traditional archive selector syntax <i>'archive(file)'</i> of the GOLD linker, is broken due to the fix for PP118564.  Users are advised to use the BFD-style syntax <i>archive:file'</i> until this is fixed.
+</li><li>Profiling with compiler option -pg is not implemented.
+</li><li>OVERLAY qualifier in linker command files is not supported.
+</li><li>Compiler is known to crash for code that accesses an unaligned 64-bit global variable.
+</li><li>Assembler crashes while performing jump-table relaxation with link-time optimization. Use compiler option <i>'-mno-jump-table-opt'</i> for LTO-enabled builds.
+		<li>The movep optimization in the re-org pass can generate incorrect code in some cases. There is <b>no prior indication</b> when this happens and <b>no work-around</b> for it. Release marked defunct as of August 15th, 2019 and superseded by <a href="../2019.03-03/index.html">v2019.03-03</a>.</li>
+		</li>
+		</ul>
+		<h3 id="2019.03-01Docs">2019.03-01 Documentation Updates</h3>
+		<ul>
+		<li><a href="../2019.03-01/docs/MIPS_nanoMIPS_GNU_Toolchain_Getting_Started_Guide_01_02_DN00183.pdf">Getting Started Guide, v1.02</a></li>
+		<li><a href="../2019.03-01/docs/MIPS_nanoMIPS_ABI_supplement_01_03_DN00179.pdf">nanoMIPS ABI Supplement, v1.03</a></li>
+		<li><a href="../2019.03-01/docs/MIPS_nanoMIPS_GNU_Toolchain_Programmers_Guide_01_04_DN00180.pdf">Programmer's Guide, v1.04</a></li>
+		<li><a href="../2019.03-01/docs/MIPS_nanoMIPS_p32_ABI_Porting_Guide_01_02_DN00184.pdf">nanoMIPS ABI Porting Guide, v1.02</a></li>
+	        </ul>
+		<!-- End 2019.03-01 -->
+		<h2>Toolchain 2018.06-06</h2>
+		<h4>Published on March 28, 2019</h4>
+		<h3 id="2018.06-06NewFeatures">2018.06-06 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-06BugFixes">2018.06-06 Bug Fixes</h3>
+		<ul>
+		<li>Prevent access to stack after the stack frame has been released in the epilogue (PP118955).</li>
+		</ul>
+		<h3 id="2018.06-06OtherChanges">2018.06-06 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-06KnownIssues">2018.06-06 Known Issues</h3>
+		<ul>
+		<li>The archive selector syntax <i>`archive:file'</i> of the BFD linker, is not supported by GOLD (PP118564).</li>
+		  <li>The logic for traversing a frame-pointer-chain is not implemented. `__builtin_return_address()' with count != 0 always returns zero and `__builtin_frame_address()' with count != 0 assumes that the parent's frame pointer is stored at the stack slot where the frame pointer points.</li>
+		  <li>OVERLAY qualifier in linker command files is not supported.</li>
+		  <li>Profiling with compiler option -pg is not implemented.</li>
+		  <li>Linux core file support in GDB is not implemented.</li>
+		  <li>CP0 register 22, select 3, known as the Core Control register is incorrectly referred to as SRAM Control in low-level include files (mips/m32c0.h). Consequently all support macros and functions provided by HAL for this register are derived from this incorrect name.</li>
+		  <li>The assembler in the linux toolchain is known to execute very slowly for large source files. It can be sped up using the assembler option -mno-minimize-relocs.</li>
+		</ul>
+		<!-- End 2018.06-06 -->
+		<h2>Toolchain 2018.06-05</h2>
+		<h4>Published on November 16, 2018</h4>
+		<h3 id="2018.06-05Docs">2018.06-05 Documentation</h3>
+		<ul>
+		<li><a href="../2018.06-05/docs/MIPS_nanoMIPS_Memcpy_Tuning_Whitepaper_00_01.pdf">Tuning memcpy for MIPS Cores - whitepaper</a></li>
+	        </ul>
+		<h3 id="2018.06-05NewFeatures">2018.06-05 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-05BugFixes">2018.06-05 Bug Fixes</h3>
+		<ul>
+		  <li>Fix memcpy() to restrict pre-fetches to the memory region defined by its parameters (PP118771).</li>
+		  <li>Fix GDB to print correct source lines when disassembling a function in the lower (0-based) address region (PP118772).</li>
+		</ul>
+		<h3 id="2018.06-05OtherChanges">2018.06-05 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-05KnownIssues">2018.06-05 Known Issues</h3>
+		<ul>
+		<li>The archive selector syntax <i>`archive:file'</i> of the BFD linker, is not supported by GOLD (PP118564).</li>
+		  <li>The logic for traversing a frame-pointer-chain is not implemented. `__builtin_return_address()' with count != 0 always returns zero and `__builtin_frame_address()' with count != 0 assumes that the parent's frame pointer is stored at the stack slot where the frame pointer points.</li>
+		  <li>OVERLAY qualifier in linker command files is not supported.</li>
+		  <li>Profiling with compiler option -pg is not implemented.</li>
+		  <li>Linux core file support in GDB is not implemented.</li>
+		  <li>CP0 register 22, select 3, known as the Core Control register is incorrectly referred to as SRAM Control in low-level include files (mips/m32c0.h). Consequently all support macros and functions provided by HAL for this register are derived from this incorrect name.</li>
+		  <li>The assembler in the linux toolchain is known to execute very slowly for large source files. It can be sped up using the assembler option -mno-minimize-relocs.</li>
+		</ul>
+		<!-- End 2018.06-05 -->
+		<h2>Toolchain 2018.06-04</h2>
+		<h3 id="2018.06-04NewFeatures">2018.06-04 New Features</h3>
+		<ul>
+		<li>Add statistics regarding instruction transformations done by link-time relaxation to the linker <i>--stats</i> output.</li>
+		<li>Improve link-time by speeding up conversion from input sections into relaxed input sections (PP118421).</li>
+		</ul>
+		<h3 id="2018.06-04BugFixes">2018.06-04 Bug Fixes</h3>
+		<ul>
+		  <li>Fix dot assignment expressions to allow the symbol _gp to be placed inside an output section block in linker script (PP118106).</li>
+		  <li>Show all fill information in linker map file output (PP118550).</li>
+		  <li>Print linker symbols in linker map file and change the order of output sections in map file output to match the order of sections as specified in the linker script (PP118551).</li>
+		  <li>Fix incorrect addr2line output due to interaction of 0-based address ranges and the <i>--gc-sections</i> option (PP118699).</li>
+		  <li>Omit SHT_NOBITS sections from generated output.</li>
+		  <li>Fix linker option <i>--sort-section</i> to give higher precedence to ordering specified in the linker script.</li>
+		  <li>Fix decoding of kscratch register numbers in nanoMIPS disassembly (PP118679).</li>
+		  <li>Fix missing PC-relative relocations in assembly due to reloc minimization. This permits safely enabling the <i>--relax</i> linker option (PP118705).</li>
+		  <li>Fix segmentation fault in GDB after patching executable with <i>-write</i> option (PP118635).</li>
+		</ul>
+		<h3 id="2018.06-04OtherChanges">2018.06-04 Other Changes</h3>
+		<ul>
+		  <li>Linker option <i>--[no-]print-discarded-sections</i> changed to <i>--[no-]print-map-discarded</i>, to match the MIPS BFD linker option (PP118216).
+		</ul>
+		<h3 id="2018.06-04KnownIssues">2018.06-04 Known Issues</h3>
+		<ul>
+		  <li>The archive selector syntax `archive:file' of the BFD linker, is not supported by GOLD (PP118564).</li>
+		  <li>Function <i>memcpy()</i> may do pre-fetch on a cache-line beyond the designated memory region (PP118771).</li>
+		  <li>GDB may print incorrect source lines when disassembling a function in the lower (0-based) address region (PP118772).</li>
+		</ul>
+		<!-- End 2018.06-04 -->
+		<h2>Toolchain 2018.06-03</h2>
+		<h3 id="2018.06-03NewFeatures">2018.06-03 New Features</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-03BugFixes">2018.06-03 Bug Fixes</h3>
+		<ul>
+		<li>Fix archive file selector handling in linker scripts (PP118564).</li>
+		<li>Fix problem where pointers to transformable text sections and their relocation sections may become invalid in a relaxation pass (PP118622).</li>
+		<li>Fix buffer overruns in the assembler. </li>
+		</ul>
+		<h3 id="2018.06-03OtherChanges">2018.06-03 Other Changes</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<h3 id="2018.06-03KnownIssues">2018.06-03 Known Issues</h3>
+		<ul>
+		<li>Fill information is missing in map file output (PP118550)</li>
+		<li>Linker symbols are not emitted in map file output (PP118551)</li>
+		<li>The symbol _gp can not be placed inside an output section block in linker script (PP118106).</li>
+		</ul>
+		<!-- End 2018.06-03 -->
+		<h2>Toolchain 2018.06-01</h2>
+		<h3 id="2018.06-01Docs">2018.06-01 Documentation</h3>
+		<ul>
+		<li><a href="../2018.06-01/docs/MIPS_nanoMIPS_GNU_Toolchain_Getting_Started_Guide_01_02_DN00183.pdf">Getting Started Guide</a></li>
+		<li><a href="../2018.06-01/docs/MIPS_nanoMIPS_ABI_supplement_01_02_DN00179.pdf">nanoMIPS ABI Supplement</a></li>
+		<li><a href="../2018.06-01/docs/MIPS_nanoMIPS_p32_ABI_Porting_Guide_01_02_DN00184.pdf">nanoMIPS ABI Porting Guide</a></li>
+		<li><a href="../2018.06-01/docs/MIPS_nanoMIPS_GNU_Toolchain_Programmers_Guide_01_03_DN00180.pdf">Programmer's Guide</a></li>
+	        </ul>
+		<h3 id="2018.06-01NewFeatures">2018.06-01 New Features</h3>
+		<ul>
+		  <li>Reduce link-time relaxation phase execution time by 30-35% (PP118421).</li>
+		  <li>Add linker option --no-print-discarded-sections to reduce map file size with --gc-sections.</li>
+		  <li>Add linker option --no-strict-address-modes to reduce number of instructions generated when GP-relative addressing exceeds 2MB (PP118106).</li>
+		  <li>Allow quoted strings in path names in GDB (PP118226).</li>
+		</ul>
+		<h3 id="2018.06-01BugFixes">2018.06-01 Bug Fixes</h3>
+		<ul>
+		  <li>Linker fix for incorrect addr2line output with --gc-sections (PP118305).</li>
+		  <li>Linker fix for overlapping VMA and LMA regions (PP118391).</li>
+		  <li>Correctly calculate image addresses in linker map file after relaxation (PP118458).</li>
+		  <li>Fix link-time failure due to undefined symbols with -mclib=[small|tiny] (PP118523).</li>
+		</ul>
+		<h3 id="2018.06-01OtherChanges">2018.06-01 Other Changes</h3>
+		<ul>
+		<li>Omit redundant place-holder relocations for 2 byte code alignment.</li>
+		<li>Reduce default code section alignment to 2 bytes.</li>
+		</ul>
+		<h3 id="2018.06-01KnownIssues">2018.06-01 Known Issues</h3>
+		<ul>
+		  <li>The logic for traversing a frame-pointer-chain is not implemented. `__builtin_return_address()' with count != 0 always returns zero and `__builtin_frame_address()' with count != 0 assumes that the parent's frame pointer is stored at the stack slot where the frame pointer points.</li>
+		  <li>OVERLAY qualifier in linker command files is not supported.</li>
+		  <li>Profiling with compiler option -pg is not implemented.</li>
+		  <li>Linux core file support in GDB is not implemented.</li>
+		  <li>CP0 register 22, select 3, known as the Core Control register is incorrectly referred to as SRAM Control in low-level include files (mips/m32c0.h). Consequently all support macros and functions provided by HAL for this register are derived from this incorrect name.</li>
+		  <li>The assembler in the linux toolchain is known to execute very slowly for large source files. It can be sped up using the assembler option -mno-minimize-relocs.</li>
+		</ul>
+		<!-- End 2018.06-01 -->
+		<h2>Toolchain 2018.04-02</h2>
+		<h3 id="2018.04-02NewFeatures">2018.04-02 New Features</h3>
+		<ul>
+		<li>Linux user-mode support with dynamic linking.</li>
+		<li>Add TLS support for Linux.</li>
+		<li>The linker option --discard-locals now discards $L as well as .L symbols.</li>
+		</ul>
+		<h3 id="2018.04-02BugFixes">2018.04-02 Bug Fixes</h3>
+		<ul>
+		<li>Fix label difference expression corner cases that affected link time relaxation correctness.</li>
+		<li>Fix floating point load/store assembly macros.</li>
+		<li>Fix unaligned load/store assembly macros.</li>
+		<li>Prevent finalisation of relocations to weak symbols during assembly.</li>
+		<li>Pass -mdsp/-mno-dsp to the assembler from the compiler driver.</li>
+		</ul>
+		<h3 id="2018.04-02OtherChanges">2018.04-02 Other Changes</h3>
+		<ul>
+		<li>Remove support for .globl extension originating from MIPS IRIX.</li>
+		<li>Remove experimental ASEs and base instructions from the assembler.</li>
+		</ul>
+		<h3 id="2018.04-02KnownIssues">2018.04-02 Known Issues</h3>
+		<ul>
+		<li>Linux user-mode support is functional but still in test.</li>
+		<li>TLS descriptors are not fully implemented.</li>
+		<li>Linux user-mode GDB support is not yet implemented.</li>
+		</ul>
+		<!-- End 2018.04-02 -->
+		<h2>Toolchain 2018.03-02</h2>
+		<h3 id="2018.03-02NewFeatures">2018.03-02 New Features</h3>
+		<ul>
+		<li>Support for compiler generated atomic operations using the sync primitives.</li>
+		<li>Support for the GNU nested function C language extension.</li>
+		<li>Support for the BADINSTRX register in the HAL.</li>
+		<li>Support for using CP0 register names in assembly like $count.</li>
+		<li>MTHC0/MFHC0 are now available in the base nanoMIPS ISA.</li>
+		<li>Link time relaxation now responds to whether PC-relative expansions are required or not.</li>
+		<li>New relaxations to reduce 48-bit instructions to 32-bit instructions.</li>
+		<li>Enhanced debug messages for out-of-range symbols at link time.</li>
+		<li>Additional assembler macro expansion support for indexed load and LLWP/SCWP.</li>
+		<li>The encoding of MTTGPR has been updated in line with an architecture specification change.</li>
+		<li>Linker data section sorting is now controlled via the command line option --sort-by-reference.</li>
+		<li>The linker can now generate a reference count report for optimising data section layout using command line option --reference-counts.</li>
+		<li>The DSP and MT ASEs are now enabled by default for -march=i7200.</li>
+		</ul>
+		<h3 id="2018.03-02BugFixes">2018.03-02 Bug Fixes</h3>
+		<ul>
+		<li>Link time adjustment of alignment padding no longer deletes half a 32-bit NOP.</li>
+		<li>The 'm' constraint in inline ASM now only permits simple base register addressing.</li>
+		<li>Linker processing is no longer confused by output sections that only contain alignment padding.</li>
+		<li>Alignment rules no longer break jump table branch calculations.</li>
+		<li>The linker now verifies alignment as well as range for relocs that do not support 1-byte granularity.</li>
+		<li>The uhi32.ld linker script has been updated to avoid introducing LMA/VMA inconsistencies.</li>
+		<li>GCC --target-help output no longer displays unavailable options.</li>
+		<li>Support limited block re-ordering at -Os optimisation level with __builtin_expect.</li>
+		<li>Setting the entry point of an ELF via linker command line now overrides a linker script setting.</li>
+		<li>Memory region layout now accounts for orphan sections and implicit LMA addresses.</li>
+		<li>The linker can now cope with relocations that are applied to discarded input sections.</li>
+		<li>The compiler no longer generates unsupported MADD and MSUB instructions where an accumulator is not specified.</li>
+		</ul>
+		<h3 id="2018.03-02OtherChanges">2018.03-02 Other Changes</h3>
+		<ul>
+		<li>The %gprel32 explicit reloc has been changed to %gprel; both will be accepted but the latter is ABI defined.</li>
+		</ul>
+		<h3 id="2018.03-02KnownIssues">2018.03-02 Known Issues</h3>
+		<ul>
+		<li>Hard-float code generation is experimental, not supported for production use and subject to incompatible changes in the future.</li>
+		<li>SVR4 style position independent code generation (-fpic, -fPIC) is also experimental, not supported for production use and subject to incompatible changes in the future.</li>
+		<li>The ABI for calling _mcount as part of function profiling is experimental and subject to incompatible changes in the future.</li>
+		</ul>
+		<!-- End 2018.03-02 -->
+		<h2>Toolchain 2018.01-01</h2>
+		<h3 id="2018.01-01NewFeatures">2018.01-01 New Features</h3>
+		<ul>
+		<li>Support for the nanoMIPS32R6 ISA for Bare Metal tools in a soft-float, little-endian configuration.</li>
+		<li>Automatic link time code re-writing to fix any out-of-range references by using longer code sequences.</li>
+		<li>Control over the use of code and data models used to calculate addresses via the -mcmodel=[auto|medium|large] option. Automatic is the default.</li>
+		<li>Fine grain control over the use of code and data model usage via attributes __attribute__((cmodel("auto"))).</li>
+		<li>Ability to guarantee all code is position independent via the -mpcrel option. This is the default.</li>
+		<li>Ability to guarantee that generated code is safe for link time relaction via the -mrelax option. This is the default.</li>
+		<li>Ability to enable link time relaxations via the --relax linker option. Use -Wl,--relax via the compiler driver.</li>
+		<li>Ability to disable link time expansions via the --no-relax linker option. Use -Wl,--no-relax via the compiler driver.</li>
+		<li>Advanced register allocation tuning to improve use of 16-bit instructions via the -fadjust-costs option.</li>
+		<li>Advanced splitting of offset addressing calculations to improve use of 16-bit load/store instructions via the -mshrink-offsets option.</li>
+		</ul>
+		<h3 id="2018.01-01BugFixes">2018.01-01 Bug Fixes</h3>
+		<ul>
+		<li>This is the initial production release of nanoMIPS tools. Please contact support for information on bugs fixed during the prototyping and pre-release phase of nanoMIPS tools.</li>
+		</ul>
+		<h3 id="2018.01-01OtherChanges">2018.01-01 Other Changes</h3>
+		<ul>
+		<li>The nanoMIPS tools use the GOLD linker instead of the GNU BFD Linker. Some minor variation in behaviour vs the GNU BFD Linker should be expected but overall the same feature set is supported.</li>
+		<li>GCC is based on the 6.3.0 community release.</li>
+		<li>The GNU assembler and binary utilities are based on the 2.28 community release.</li>
+		<li>GOLD is based on the 1.14 community release.</li>
+		<li>NEWLIB is based on the 2.5.0 community release.</li>
+		<li>GDB is based on the 8.0 community release.</li>
+		<li>QEMU is based on the 2.5.0 community release.</li>
+		</ul>
+		<h3 id="2018.01-01KnownIssues">2018.01-01 Known Issues</h3>
+		<ul>
+		<li>Hard-float code generation is experimental, not supported for production use and subject to incompatible changes in the future.</li>
+		<li>SVR4 style position independent code generation (-fpic, -fPIC) is also experimental, not supported for production use and subject to incompatible changes in the future.</li>
+		<li>The -fipa-pta optimisation may be unstable due to an issue unrelated to the nanoMIPS backend. It is disabled by default at all optimisation levels.</li>
+		<li>GCC plugins are not supported in this release.</li>
+		<li>The 'm' memory constraint is not guaranteed to generate addressing modes suitable for all forms of load/store instructions. Use the MIPS specific 'ZR' constraint to force the use of simple register based addressing.</li>
+		<li>The various __sync* primitives such as __sync_fetch_and_add are not supported via generated code and will instead generate a call to a support function of a similar name.</li>
+		<li>The assembler encodes the SDBBP instruction (without an operand) with a code of field set to all 1s instead of 0</li>
+		</ul>
+		<!-- End 2018.01-01 -->
+		</div>
+
+
+    </div>
+	<br>
+    <div id="FooterMainContainer">
+		<div id="FooterContainer">
+			<div class="footerlogo">
+				<a href="http://www.mips.com" target="_blank"><img src="./images/MIPS_master_logo.png" width="100%" height="100%" /></a>
+			</div>
+			<div class="copyright">&copy; 2019 MIPS Tech, LLC. All rights reserved</div>
+		</div>
+	</div>
+	
+	
+	
+	
+</body>
+
+</html>

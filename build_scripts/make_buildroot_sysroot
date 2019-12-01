@@ -1,0 +1,49 @@
+#!/bin/bash
+
+if [ $# -ne 3 ]; then
+  echo "Usage: make_buildroot_sysroot <native_install_folder> <cross_sysroot_folder>"
+  echo "                              [lib|lib32|lib64]"
+  exit 1;
+fi
+
+NATIVE_INSTALL=$1
+CROSS_SYSROOT=$2
+ABI_DIR=$3
+
+set -e
+
+mkdir -p $NATIVE_INSTALL
+rsync -a --exclude=lib/ --exclude=lib32/ --exclude=lib64/ \
+         --exclude=bin-o32/ --exclude=bin-n32/ --exclude=bin-n64/ \
+	 --exclude=sbin-o32/ --exclude=sbin-n32/ --exclude=sbin-n64/ \
+	 $CROSS_SYSROOT/ $NATIVE_INSTALL/
+mkdir -p $NATIVE_INSTALL/lib
+cp -r $CROSS_SYSROOT/$ABI_DIR/* $NATIVE_INSTALL/lib/
+mkdir -p $NATIVE_INSTALL/usr/lib
+cp -r $CROSS_SYSROOT/usr/$ABI_DIR/* $NATIVE_INSTALL/usr/lib/
+if [ $ABI_DIR != "lib" ]; then
+  (cd $NATIVE_INSTALL; ln -sf lib $ABI_DIR)
+  (cd $NATIVE_INSTALL/usr; ln -sf lib $ABI_DIR)
+fi
+
+case $ABI_DIR in
+  lib) abi_suffix=o32;;
+  lib32) abi_suffix=n32;;
+  lib64)  abi_suffix=n64;;
+  *) echo "unknown abi_dir: $ABI_DIR"; exit 1;;
+esac
+
+mkdir -p $NATIVE_INSTALL/sbin
+if [ -d $CROSS_SYSROOT/sbin-$abi_suffix ]; then
+  cp -r $CROSS_SYSROOT/sbin-$abi_suffix/* $NATIVE_INSTALL/sbin/
+fi
+mkdir -p $NATIVE_INSTALL/usr/sbin
+if [ -d $CROSS_SYSROOT/usr/sbin-$abi_suffix ]; then
+  cp -r $CROSS_SYSROOT/usr/sbin-$abi_suffix/* $NATIVE_INSTALL/usr/sbin/
+fi
+mkdir -p $NATIVE_INSTALL/usr/bin
+if [ -d $CROSS_SYSROOT/usr/bin-$abi_suffix ]; then
+  cp -r $CROSS_SYSROOT/usr/bin-$abi_suffix/* $NATIVE_INSTALL/usr/bin/
+fi
+
+(cd $NATIVE_INSTALL/usr/bin; ln -sf gcc cc)

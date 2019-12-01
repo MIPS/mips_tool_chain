@@ -1,0 +1,37 @@
+# This script uses the build script to create a llvm-based linux cross
+# clang package.  Set TOPDIR and TARGET before running.  TOPDIR should be
+# The directory where you want to build everything (it will contain subdirs
+# for sources, objects, etc) and the only target supported at the moment
+# is mips-mti-linux.
+#
+# You'll have to install the following packages in Ubuntu 14.04:
+#
+#     git flex bison make texinfo cmake ninja-build
+#     swig libedit-dev libncurses5-dev groff tcl
+
+export TOPDIR=/directory
+GITHOME=ssh://git@github.com/MIPS
+TARGET=mips-mti-linux
+INSTALL=$TOPDIR/install-$TARGET
+OBJ=$TOPDIR/obj-$TARGET
+SYSROOT=$INSTALL/sysroot
+
+cd $TOPDIR
+
+G="--path=$INSTALL/bin --git_home=$GITHOME"
+G="$G --build=$OBJ --prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT"
+
+b/build_toolchain update $G --branch=llvm:vak/dev/llvmtools llvm \
+                            --branch=clang:vak/dev/llvmtools clang \
+                            --branch=lld:vak/dev/llvmtools lld \
+                            --branch=lldb:vak/dev/llvmtools lldb \
+                            --branch=compiler-rt:vak/dev/llvmtools compiler-rt \
+                            --branch=musl:vak/dev/llvmtools musl \
+                            --branch=libunwind:vak/dev/llvmtools libunwind \
+                            --branch=libcxx:vak/dev/llvmtools libcxx \
+                            --branch=libcxxabi:vak/dev/llvmtools libcxxabi \
+                            --branch=binutils:vak/dev/llvmtools binutils \
+                            linux
+b/build_toolchain build $G binutils || exit 1
+b/build_toolchain build $G llvm || exit 1
+b/build_toolchain build $G llvm_multilibs || exit 1

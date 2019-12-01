@@ -1,0 +1,16 @@
+
+# SOURCE/$1 should be $INSTALL/$TARGET
+# DEST should be $SYSROOT
+SOURCE=$1
+DEST=$2
+
+find $SOURCE | grep -e '\.so' | grep -v 'gdb.py' | while read s
+do
+        x=`echo $s | sed -e "s,$SOURCE/lib/,,"`
+        y=`dirname $x`
+        f=`basename $x`
+        d=$DEST/$y/usr/lib/$f
+
+        /bin/rm -f $d
+        /bin/cp -d $s $d
+done
