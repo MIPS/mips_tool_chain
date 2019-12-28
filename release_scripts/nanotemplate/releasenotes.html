@@ -41,6 +41,15 @@
 	<h1>Release Notes</h1>
 			      
 	    <!-- ${TOC} -->
+	    2019.03-06
+	    &nbsp; <a href="#2019.03-06NewFeatures">New Features</a>
+	    &nbsp; <a href="#2019.03-06BugFixes">Bug Fixes</a>
+	    &nbsp; <a href="#2019.03-06OtherChanges">Other Changes</a>
+	    &nbsp; <a href="#2019.03-06KnownIssues">Known Issues</a>
+	    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</a>
+	    &nbsp; <a href="#2019.03-03CompVer">Component Versions</a>
+	    <br />
+	    <!-- End 2019.03-06 -->
 	    2019.03-05
 	    &nbsp; <a href="#2019.03-05NewFeatures">New Features</a>
 	    &nbsp; <a href="#2019.03-05BugFixes">Bug Fixes</a>
@@ -148,6 +157,29 @@
 		<div id="Toolchain">
 		
 		<!-- ${NOTES} -->
+		<h2>Toolchain 2019.03-06</h2>
+		<h4>Published on December 28, 2019</h4>
+		<h3 id="2019.03-06NewFeatures">2019.03-06 New Features</h3>
+		<ul>
+		<li>Add support for overlays in GOLD linker (PP129226).</li>
+		</ul>
+		<h3 id="2019.03-06BugFixes">2019.03-06 Bug Fixes</h3>
+		<ul>
+		<li>Fix decoding rule for the <i>SAVE[32]</i> instruction in GDB simulator (PP129308).</li>
+		<li>Enable GDB to correctly single-step over certain nanoMIPS control transfer (<i>BBEQZC, BBNEZC, BEQC[16], BEQC[16], JALRC[16], JRC[16], BRSC</i>) and frame handling (<i>RESTORE.JRC[16], RESTORE.JRC[32], SAVE[32]</i>) instructions.</li>
+		<li>Fix misaligned output from assembler when handling jumptable relaxation with table alignment directives. This only affects very large jumptables where 16-bit signed/unsigned offsets are insufficient to cover all the jump vectors.</li>
+		</ul>
+		<h3 id="2019.03-06OtherChanges">2019.03-06 Other Changes</h3>
+		<ul>
+		<li>Improve link speed for section pattern matching by reducing the number of string operations (PP129306).</li>
+		<li>Treat calls to library functions as absolute regardless if PIC option for bare-metal toolchain. This is trivially predicated on bare-metal links being static.</li>
+		<li>Improve scheduling of multi-word loads and stores (<i>LWM/SWM</i> instructions) in the compiler for better performance.</li>
+		</ul>
+		<h3 id="2019.03-06KnownIssues">2019.03-06 Known issues</h3>
+		<ul>
+		<li>None</li>
+		</ul>
+		<!-- End 2019.03-06 -->
 		<h2>Toolchain 2019.03-05</h2>
 		<h4>Published on October 28, 2019</h4>
 		<h3 id="2019.03-05NewFeatures">2019.03-05 New Features</h3>
