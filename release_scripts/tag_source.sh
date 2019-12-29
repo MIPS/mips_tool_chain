@@ -115,8 +115,8 @@ for p in $packages; do
     if [ -z "$repo" ]; then
 	repo=`python $rootdir/overtest/overtest.py --export --schema=testrun -i $testid_linux --automatic | grep -i -e "$p Remote:" | cut -d: -f3  | tr -d \'\ `
     fi
-    # Translate ://<url> to ssh://gitosis@<url>
-    repo=${repo/\/\//ssh:\/\/gitosis@}
+    # Translate ://<url> to ssh://git@<url>
+    repo=${repo/\/\//ssh:\/\/git@}
 
     # Fetch the branch-name
     branch=`python $rootdir/overtest/overtest.py --export --schema=testrun -i $testid --automatic | grep -i -e "$p Branch:" | cut -d: -f2  | tr -d \'\ `
@@ -126,7 +126,7 @@ for p in $packages; do
 
     if [ -d $p/.git ]; then
 	# repo already cloned
-	if [ -z "`grep -e ssh:\/\/gitosis@ $rootdir/$p/.git/config`" ]; then
+	if [ -z "`grep -e ssh:\/\/git@ $rootdir/$p/.git/config`" ]; then
 	    echo "$rootdir/$p checked out from read-only repository"
 	    exit 1
 	fi
@@ -138,7 +138,7 @@ for p in $packages; do
 	popd
     else
 	# Checkout the branch
-	$rootdir/mips_tool_chain/build_scripts/build_toolchain update --branch=$p:$branch --source=$rootdir --src=$p:$repo $p
+	$rootdir/mips_tool_chain/build_scripts/build_toolchain update --branch=$p:$branch --source=$rootdir --git_ref=/scratch/overtest/git/$p".git" --src=$p:$repo $p
 	if [[ $? -ne 0 || ! -d $p/.git ]]; then
 	    echo "Failed to checkout $p:$branch from $repo"
 	    exit 1

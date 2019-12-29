@@ -362,15 +362,17 @@ function check_src() {
 	    fi
 	    git_args=""
 	    branch_name=`find_list_entry "$name" "${branch_list[@]}"`
-	    if [ "${branch_name}" != "" ] ; then
-	        git_args="$git_args -b $branch_name"
-		 if [ "1.7.10" == $( echo "1.7.10
-"`git --version | cut -d\  -f 3`  | sort -V | head -n 1 ) ]; then
-		     git_args="$git_args --single-branch"
-		 fi
-	    fi
 	    if [ "x${git_ref}" != "x" -a -d "${git_ref}" ]; then
 		git_args="$git_args --reference=$git_ref"
+	    fi
+	    if [ "${branch_name}" != "" ] ; then
+	        git_args="$git_args -b $branch_name"
+		if [ "x${git_ref}" == "x" -o ! -d "${git_ref}" ]; then
+		    if [ "1.7.10" == $( echo "1.7.10
+		    "`git --version | cut -d\  -f 3`  | sort -V | head -n 1 ) ]; then
+			git_args="$git_args --single-branch"
+		    fi
+		fi
 	    fi
 	    if [ "$src" = "$git_home/packages.git" ] ; then
 		if [ ! -d $src_dir/packages ] ; then
@@ -397,7 +399,7 @@ function check_src() {
 		src=$src_dir/packages/$s
 	    fi
 	    if [ ! -f $src -a ! -d $src_dir/$name ] ; then
-		(cd $src_dir; git clone $git_args $git_src $name)
+		(cd $src_dir; echo git clone $git_args $git_src $name; git clone $git_args $git_src $name)
 	        update_src_and_apply_patches $1 $2 $3
 	    fi
 	fi
