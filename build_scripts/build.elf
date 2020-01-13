@@ -85,6 +85,16 @@ G="$G --build=$OBJ --prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT"
 # uncomment the next line.
 # b/build_toolchain update $G gmp mpfr mpc dejagnu
 
+if [ $(uname) = 'Darwin' ]; then
+    # Fix ncurses darwin bug.
+    b/build_toolchain update $HOSTG ncurses
+    sed -i -e "s,\"-no-cpp-precomp\",\"--no-cpp-precomp\"," src/ncurses/configure
+
+    # Fix expat darwin bug.
+    b/build_toolchain update $HOSTG expat
+    sed -i -e "s,finish_cmds=',#finish_cmds='," src/expat/configure
+fi
+
 b/build_toolchain build $BUILDG texinfo || exit 1
 
 b/build_toolchain build $G binutils || exit 1
