@@ -1,0 +1,157 @@
+# -*- python -*-
+import json
+import os
+
+"""
+Notes on some problems I encountered and the solutions I came up with.
+
+PROBLEM: BSD getopt (mac version) behaves differently:
+SOLUTION: Use gnu getopt
+brew install gnu-getopt
+PATH=/usr/local/opt/gnu-getopt/bin:$PATH
+
+PROBLEM: BSD readlink (mac version) does not accept -m option:
+SOLUTION: Use gnu readlink
+brew install coreutils
+PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
+
+PROBLEM: need tex executable
+SOLUTION:
+brew install mactex
+PATH=/Library/TeX/texbin:$PATH
+
+PROBLEM: ncurses: -no-cpp-precomp sould be --no-cpp-precomp in ./configure
+SOLUTION: "Hack" build.elf to edit-in-place the fix using 'sed'
+
+PROBLEM: expat: ldconfig not required or understood on darwin, but
+         chosen by .configure for some reason.
+SOLUTION: "Hack" build.elf to edit-in-place the fix using 'sed'
+"""
+
+def str_to_file(string, executable=None):
+    """Return a generator which writes the specified string to a file."""
+    def write_str_to_file(target, source, env, string=string):  #pylint: disable=unused-argument
+        filename = str(target[0])
+        with open(filename, 'w') as fh:
+            fh.write(string)
+        if executable:
+            mode = os.stat(filename).st_mode
+            mode |= (mode & 0o444) >> 2  # copy R bits to X
+            os.chmod(filename, mode)
+    return write_str_to_file
+
+def make_symlink(target, source, env):
+    """Function for creating symlinks in a Command builder."""
+    os.symlink(os.path.abspath(str(source[0])), os.path.abspath(str(target[0])))
+
+with open(File('config.json').abspath, 'r') as fh:
+    config = json.load(fh)
+
+version = config['version']
+build_script_dir = config['build_script_dir']
+
+env = Environment()
+
+sources = []  # Will store all the sources needed for the build
+
+sources += [env.Command('work/b', build_script_dir, make_symlink)]
+
+build_scripts = (
+    'build.elf',
+)
+for build_script in build_scripts:
+    src = os.path.join(build_script_dir, build_script)
+    topdir = Dir('work').abspath
+    sources += [env.Command(f'work/{build_script}', src, f"""\
+sed -e "s,TOPDIR=/directory,TOPDIR={topdir}," \
+    -e "s,# HOSTTRIPLE,HOSTTRIPLE," \
+    -e "s,# HOSTTRIPLE,HOSTTRIPLE," \
+    -e "s,--jobs=3,--jobs=8," \
+    $SOURCE > $TARGET
+chmod a+x $TARGET
+""")]
+
+components = (
+    'binutils',
+    'gdb',
+    'newlib',
+    'uclibc',
+    'gcc',
+    'glibc',
+    'smallclib',
+    'gold',
+    'qemu',
+    'packages',
+    'python',
+)
+
+# Download all the components into our workdir
+for component in components:
+    t = f'{component}-{version}'
+    dirname = Dir(f'work/src/{component}')
+    sources += [env.Command(
+        f'work/src/{component}/.fetch',
+        None,
+        f"""\
+mkdir -p {dirname}
+curl http://codescape.mips.com/components/toolchain/{version}/src/{t}.src.tar.gz | \
+tar zxf - -C {dirname} --strip-components 1
+touch $TARGET
+""")];
+
+# Call gcc contrib/download_prerequisites to get gcc prerequisites.
+sources += [env.Command(
+    'work/src/gcc/.download_prerequisites',
+    'work/src/gcc/.fetch',
+    f"(cd work/src/gcc; contrib/download_prerequisites) && touch $TARGET")]
+
+
+env.Command(f'work/src/gcc/.inclhack.txt', f'work/src/gcc/.fetch',
+            str_to_file("""
+/*
+ *  macOS 10.15 <Availability.h> does not define __OSX_AVAILABLE_STARTING on
+ *  non-clang compilers.
+ */
+fix = {
+    hackname  = darwin_availability;
+    mach      = "*-*-darwin*";
+    files     = Availability.h;
+    select    = "#endif /\\* __OSX_AVAILABLE_STARTING \\*/";
+    c_fix     = format;
+    c_fix_arg = <<- _EOFix_
+	#endif /* __OSX_AVAILABLE_STARTING */
+	#ifndef __OSX_AVAILABLE_STARTING
+	  #define __OSX_AVAILABLE_STARTING(_osx, _ios)
+	  #define __OSX_AVAILABLE_BUT_DEPRECATED(_osxIntro, _osxDep, _iosIntro, _iosDep)
+	  #define __OSX_AVAILABLE_BUT_DEPRECATED_MSG(_osxIntro, _osxDep, _iosIntro, _iosDep, _msg)
+	#endif
+	_EOFix_;
+
+    test_text = "#endif /* __OSX_AVAILABLE_STARTING */";
+};
+"""))
+
+sources += [env.Command(f'work/src/gcc/.inclhack.ok', f'work/src/gcc/.inclhack.txt', f"cat $SOURCE >> work/src/gcc/fixincludes/inclhack.def && touch $TARGET")]
+
+
+# Create a script which calls other scripts with the required environment.
+sources += [env.Command(f'work/invoke', None, str_to_file(f"""\
+#! /bin/sh
+PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
+PATH=/usr/local/opt/gnu-getopt/bin:$PATH
+PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
+PATH=/Library/TeX/texbin:$PATH
+export PATH
+exec "$@"
+""", executable=True))]
+
+sources += [env.Command('.versions', 'work/invoke', f"""
+echo "# Command versions" > $TARGET
+$SOURCE which getopt >> $TARGET
+$SOURCE which readlink >> $TARGET
+$SOURCE which tex >> $TARGET
+""")]
+
+env.Alias('sources', sources)
+
+env.Command('elf', sources, 'cd work; ./invoke ./build.elf')
