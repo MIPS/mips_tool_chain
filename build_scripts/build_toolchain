@@ -92,8 +92,10 @@ branch_list=( )
 branch_arglist=( )
 patch_arglist=( )
 version_arglist=( )
-if [ ! -d /dev/shm ]; then
+if [ -d /dev/shm ]; then
     export TMPDIR=/dev/shm
+elif [ -d /Volumes/ram ] ; then
+    export TMPDIR=/Volumes/ram
 fi
 # Searches for the first argument within the list that follows.
 # value=`find_list_entry "gcc" "foo:bar" "gcc:moo"` would return 'moo'.
@@ -565,7 +567,9 @@ function do_make() {
     local make_jobs=""
 
     if [ $jobs -gt 1 ] ; then
-      if [ "$component_name" = "glibc" ]; then
+      if [ $(uname) = 'Darwin' ]; then
+        make_jobs="-j$jobs"
+      elif [ "$component_name" = "glibc" ]; then
         make_args="$make_args PARALLELMFLAGS=--jobs=$jobs"
       else
         make_jobs="--jobs=$jobs --load-average=$jobs"
@@ -1458,7 +1462,7 @@ function build_component() {
 	    esac
 	    skip_pdfs="yes"
 	    # fall-through
-	    ;&
+	    ;;
 	gdb/*mips*)
 	    if [ "x$buildlibs" != "x" ]; then
 	      export TEXMFHOME=$buildlibs/share/tex/texmf
