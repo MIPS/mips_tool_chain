@@ -56,6 +56,11 @@ sources = []  # Will store all the sources needed for the build
 
 sources += [env.Command('work/b', build_script_dir, make_symlink)]
 
+# Might need to replace this gcc path with a different one.
+sources += [env.Command('work/x86_64-pc-linux-gnu-gcc',
+                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-9',
+                        make_symlink)]
+
 build_scripts = (
     'build.elf',
 )
@@ -141,6 +146,7 @@ PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
 PATH=/usr/local/opt/gnu-getopt/bin:$PATH
 PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
 PATH=/Library/TeX/texbin:$PATH
+PATH={Dir('work').abspath}:$PATH
 export PATH
 exec "$@"
 """, executable=True))]
