@@ -21,11 +21,11 @@ brew install mactex
 PATH=/Library/TeX/texbin:$PATH
 
 PROBLEM: ncurses: -no-cpp-precomp sould be --no-cpp-precomp in ./configure
-SOLUTION: "Hack" build.elf to edit-in-place the fix using 'sed'
+SOLUTION: Download ncurses-6.0 in this script.
 
 PROBLEM: expat: ldconfig not required or understood on darwin, but
          chosen by .configure for some reason.
-SOLUTION: "Hack" build.elf to edit-in-place the fix using 'sed'
+SOLUTION: Download expat-2.2.9 using this script.
 """
 
 def str_to_file(string, executable=None):
@@ -47,60 +47,53 @@ def make_symlink(target, source, env):
 with open(File('config.json').abspath, 'r') as fh:
     config = json.load(fh)
 
-version = config['version']
-build_script_dir = config['build_script_dir']
-
 env = Environment()
+
+topdir = Dir('work').abspath
 
 sources = []  # Will store all the sources needed for the build
 
-sources += [env.Command('work/b', build_script_dir, make_symlink)]
+# Symlink work/b to the build_script_dir.
+sources += [env.Command('work/b', config['build_script_dir'], make_symlink)]
 
-# Might need to replace this gcc path with a different one.
-sources += [env.Command('work/x86_64-pc-linux-gnu-gcc',
-                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-9',
-                        make_symlink)]
-
+# Copy over and edit the desired build scripts to the work dir.
 build_scripts = (
     'build.elf',
 )
 for build_script in build_scripts:
-    src = os.path.join(build_script_dir, build_script)
-    topdir = Dir('work').abspath
+    src = os.path.join(config['build_script_dir'], build_script)
     sources += [env.Command(f'work/{build_script}', src, f"""\
 sed -e "s,TOPDIR=/directory,TOPDIR={topdir}," \
-    -e "s,# HOSTTRIPLE,HOSTTRIPLE," \
     -e "s,# HOSTTRIPLE,HOSTTRIPLE," \
     -e "s,--jobs=3,--jobs=8," \
     $SOURCE > $TARGET
 chmod a+x $TARGET
 """)]
 
+# Download all the desired components into our workdir.
 components = (
-    'binutils',
-    'gdb',
-    'newlib',
-    'uclibc',
-    'gcc',
-    'glibc',
-    'smallclib',
-    'gold',
-    'qemu',
-    'packages',
-    'python',
+    ('binutils', None),
+    ('gdb', None),
+    ('newlib', None),
+    ('uclibc', None),
+    ('gcc', None),
+    ('glibc', None),
+    ('smallclib', None),
+    ('gold', None),
+    ('qemu', None),
+    ('packages', None),
+    ('python', None),
+    ('ncurses', 'ftp://ftp.invisible-island.net/ncurses/ncurses-6.0.tar.gz'),
+    ('expat', 'https://github.com/libexpat/libexpat/releases/download/R_2_2_9/expat-2.2.9.tar.gz'),
 )
-
-# Download all the components into our workdir
-for component in components:
-    t = f'{component}-{version}'
-    dirname = Dir(f'work/src/{component}')
-    sources += [env.Command(
-        f'work/src/{component}/.fetch',
-        None,
-        f"""\
+for component, src in components:
+    if src is None:
+        version = config['version']
+        src = f"http://codescape.mips.com/components/toolchain/{version}/src/{component}-{version}.src.tar.gz"
+    dirname = os.path.join(topdir, 'src', component)
+    sources += [env.Command(f'work/src/{component}/.fetch', None, f"""\
 mkdir -p {dirname}
-curl http://codescape.mips.com/components/toolchain/{version}/src/{t}.src.tar.gz | \
-tar zxf - -C {dirname} --strip-components 1
+curl -L {src} | tar zxf - -C {dirname} --strip-components 1
 touch $TARGET
 """)];
 
@@ -110,7 +103,8 @@ sources += [env.Command(
     'work/src/gcc/.fetch',
     f"(cd work/src/gcc; contrib/download_prerequisites) && touch $TARGET")]
 
-
+# Hack gcc inclhack.def to work around a gcc issue building on OSX Catelina.
+# This bug will probably be fixed in the gcc sources in the future
 env.Command(f'work/src/gcc/.inclhack.txt', f'work/src/gcc/.fetch',
             str_to_file("""
 /*
@@ -135,29 +129,54 @@ fix = {
     test_text = "#endif /* __OSX_AVAILABLE_STARTING */";
 };
 """))
-
 sources += [env.Command(f'work/src/gcc/.inclhack.ok', f'work/src/gcc/.inclhack.txt', f"cat $SOURCE >> work/src/gcc/fixincludes/inclhack.def && touch $TARGET")]
 
+# Make gcc exe 'x86_64-pc-linux-gnu-gcc', used to build some components.
+# Note that this is a link to a specific homebrew gcc, which might
+# change in the future.
+sources += [env.Command('work/x86_64-pc-linux-gnu-gcc',
+                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-9',
+                        make_symlink)]
+sources += [env.Command('work/x86_64-pc-linux-gnu-ar',
+                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-ar-9',
+                        make_symlink)]
+sources += [env.Command('work/x86_64-pc-linux-gnu-ranlib',
+                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-ranlib-9',
+                        make_symlink)]
 
-# Create a script which calls other scripts with the required environment.
+# Make 'invoke' script which calls other scripts with the required environment.
 sources += [env.Command(f'work/invoke', None, str_to_file(f"""\
 #! /bin/sh
 PATH=/usr/local/opt/coreutils/libexec/gnubin:$PATH
 PATH=/usr/local/opt/gnu-getopt/bin:$PATH
 PATH=/usr/local/opt/gnu-sed/libexec/gnubin:$PATH
 PATH=/Library/TeX/texbin:$PATH
-PATH={Dir('work').abspath}:$PATH
+PATH={topdir}:$PATH
 export PATH
 exec "$@"
 """, executable=True))]
 
-sources += [env.Command('.versions', 'work/invoke', f"""
+# Check existance/versions of certain executables when called with 'invoke'.
+# (We could add further checks here that the versions are really the ones
+# we need).
+sources += [env.Command('.versions',
+                        ['work/invoke',
+                         'work/x86_64-pc-linux-gnu-gcc',
+                         'work/x86_64-pc-linux-gnu-ar',
+                         'work/x86_64-pc-linux-gnu-ranlib',
+                        ],
+                        f"""\
 echo "# Command versions" > $TARGET
 $SOURCE which getopt >> $TARGET
 $SOURCE which readlink >> $TARGET
 $SOURCE which tex >> $TARGET
+$SOURCE which x86_64-pc-linux-gnu-gcc >> $TARGET
+$SOURCE which x86_64-pc-linux-gnu-ar >> $TARGET
+$SOURCE which x86_64-pc-linux-gnu-ranlib >> $TARGET
 """)]
 
+# An alias for setup up all the source files, but not actually building.
 env.Alias('sources', sources)
 
+# Target to do the actual build.
 env.Command('elf', sources, 'cd work; ./invoke ./build.elf')
