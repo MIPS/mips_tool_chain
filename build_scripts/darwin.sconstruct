@@ -137,12 +137,10 @@ sources += [env.Command(f'work/src/gcc/.inclhack.ok', f'work/src/gcc/.inclhack.t
 sources += [env.Command('work/x86_64-pc-linux-gnu-gcc',
                         '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-9',
                         make_symlink)]
-sources += [env.Command('work/x86_64-pc-linux-gnu-ar',
-                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-ar-9',
-                        make_symlink)]
-sources += [env.Command('work/x86_64-pc-linux-gnu-ranlib',
-                        '/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-ranlib-9',
-                        make_symlink)]
+for tool in ('ar', 'ranlib'):
+    sources += [env.Command(f'work/x86_64-pc-linux-gnu-{tool}',
+                            f'/usr/local/Cellar/gcc/9.2.0_3/bin/gcc-{tool}-9',
+                            make_symlink)]
 
 # Make 'invoke' script which calls other scripts with the required environment.
 sources += [env.Command(f'work/invoke', None, str_to_file(f"""\
