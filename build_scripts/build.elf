@@ -5,8 +5,6 @@
 # for sources, objects, etc) and TARGET should either be mips-mti-elf or
 # mips-img-elf (those are the only tested targets).
 
-# See https://info.mips.com/display/SWWIKI/Building+GCC for more information.
-
 TOPDIR=/directory
 GITHOME=ssh://git@github.com/MIPS
 TARGET=mips-mti-elf
@@ -17,8 +15,9 @@ OBJ=$TOPDIR/obj-$TARGET
 BUILDOBJ=$TOPDIR/obj-build
 HOSTOBJ=$TOPDIR/obj-host
 SYSROOT=$INSTALL/$TARGET
-HOSTTOOLSROOT=/projects/mipssw/toolchains/
+HOSTTOOLSROOT=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}
 BUILDPATH=$INSTALL/bin
+TOOLSVERSION=${TOOLSVERSION:-'Scratch/experimental build `date +%Y%m%d_%H%M`'}
 
 # Set the host. Supported hosts are:
 # x86_64-pc-linux-gnu - 64-bit Linux (CentOS 5 upwards)
@@ -33,10 +32,8 @@ BUILDPATH=$INSTALL/bin
 # reference cross compiler tree, to be in the path.  These
 # requirements are not met by this script and must be handled
 # manually.
-#
-# Uncomment the line below and set the host as required:
-#
-# HOSTTRIPLE=x86_64-pc-linux-gnu
+
+HOSTTRIPLE=${HOSTTRIPLE:-x86_64-pc-linux-gnu}
 
 case x$HOSTTRIPLE in
   xx86_64-pc-linux-gnu | xi686-pc-linux-gnu )
@@ -67,44 +64,45 @@ BUILDPATH="${BUILDPATH}:$BUILDINSTALL/bin:${HOSTINSTALL}/bin"
 
 cd $TOPDIR
 
-G="--path=$BUILDPATH --git_home=$GITHOME --jobs=3"
-BUILDG="$G --build=$BUILDOBJ --prefix=$BUILDINSTALL"
-G="$G $HOSTOPTIONS --buildlibs=$BUILDINSTALL --hostlibs=$HOSTINSTALL"
-HOSTG="$G --build=$HOSTOBJ --prefix=$HOSTINSTALL"
-PYTHONG="$G --build=$OBJ --prefix=$INSTALL/python-root $PYTHONG"
-G="$G --build=$OBJ --prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT"
+G=(--path=$BUILDPATH --git_home="$GITHOME --jobs=8)
+BUILDG=("${G[@]}" --build=$BUILDOBJ --prefix=$BUILDINSTALL)
+G+=($HOSTOPTIONS --buildlibs=$BUILDINSTALL --hostlibs=$HOSTINSTALL)
+HOSTG=("${G[@]}" --build=$HOSTOBJ --prefix=$HOSTINSTALL)
+G+=(--build=$OBJ --with-pkgversion="$TOOLSVERSION")
+PYTHONG=("${G[@]}" --prefix=$INSTALL/python-root "${PYTHONG[@]}")
+G+=(--prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT)
 
 # If you want to force an update of your sources before the build.
 # uncommment the next line.
-# b/build_toolchain update $G texinfo
-# b/build_toolchain update $G termcap ncurses expat
-# b/build_toolchain update $G binutils gdb newlib gcc smallclib
-# b/build_toolchain update $G zlib pixman libffi glib qemu
+# b/build_toolchain update "${G[@]}" texinfo
+# b/build_toolchain update "${G[@]}" termcap ncurses expat
+# b/build_toolchain update "${G[@]}" binutils gdb newlib gcc smallclib
+# b/build_toolchain update "${G[@]}" zlib pixman libffi glib qemu
 
 # If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
 # uncomment the next line.
-# b/build_toolchain update $G gmp mpfr mpc dejagnu
+# b/build_toolchain update "${G[@]}" gmp mpfr mpc dejagnu
 
-b/build_toolchain build $BUILDG texinfo || exit 1
+b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
 
-b/build_toolchain build $G binutils || exit 1
-b/build_toolchain build $G gcc || exit 1
-#b/build_toolchain build $G smallclib || exit 1
+b/build_toolchain build "${G[@]}" binutils || exit 1
+b/build_toolchain build "${G[@]}" gcc || exit 1
+#b/build_toolchain build "${G[@]}" smallclib || exit 1
 
-b/build_toolchain build $HOSTG expat || exit 1
-b/build_toolchain build $HOSTG termcap || exit 1
-b/build_toolchain build $HOSTG ncurses || exit 1
-b/build_toolchain build $G gdb || exit 1
-b/build_toolchain build $HOSTG zlib || exit 1
-b/build_toolchain build $HOSTG openssl || exit 1
-b/build_toolchain build $PYTHONG python || exit 1
-b/build_toolchain build $G gdb-py || exit 1
-b/build_toolchain build $HOSTG pixman || exit 1
-b/build_toolchain build $HOSTG libffi || exit 1
-b/build_toolchain build $HOSTG libiconv || exit 1
-b/build_toolchain build $HOSTG gettext || exit 1
-b/build_toolchain build $HOSTG glib || exit 1
-b/build_toolchain build $G qemu || exit 1
+b/build_toolchain build "${HOSTG[@]}" expat || exit 1
+b/build_toolchain build "${HOSTG[@]}" termcap || exit 1
+b/build_toolchain build "${HOSTG[@]}" ncurses || exit 1
+b/build_toolchain build "${G[@]}" gdb || exit 1
+b/build_toolchain build "${HOSTG[@]}" zlib || exit 1
+b/build_toolchain build "${HOSTG[@]}" openssl || exit 1
+b/build_toolchain build "${PYTHONG[@]}" python || exit 1
+b/build_toolchain build "${G[@]}" gdb-py || exit 1
+b/build_toolchain build "${HOSTG[@]}" pixman || exit 1
+b/build_toolchain build "${HOSTG[@]}" libffi || exit 1
+b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
+b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
+b/build_toolchain build "${HOSTG[@]}" glib || exit 1
+b/build_toolchain build "${G[@]}" qemu || exit 1
 
 # This does a single run with default arch, endian, abi, and float setting.
-#b/build_toolchain check $G --runtestflags="--target_board='mips-sim-mti32'" gcc
+#b/build_toolchain check "${G[@]}" --runtestflags="--target_board='mips-sim-mti32'" gcc
