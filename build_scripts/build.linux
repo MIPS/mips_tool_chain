@@ -79,9 +79,9 @@ G+=(--prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT)
 # b/build_toolchain update "${G[@]}" binutils gdb glibc gcc qemu
 # b/build_toolchain update "${G[@]}" zlib pixman libffi glib qemu
 
-# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# If you do not want to use the system gmp, mpfr or mpc
 # uncomment the next line.
-# b/build_toolchain update "${G[@]}" gmp mpfr mpc dejagnu
+b/build_toolchain update "${G[@]}" gmp mpfr mpc
 
 b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
 
