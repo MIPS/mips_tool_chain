@@ -5,7 +5,6 @@ eval set -- "$OPTS"
 
 toolchain=
 arch=mips
-version=`basename $toolchain`
 bucket=
 id=
 latest=""
@@ -32,6 +31,7 @@ while true ; do
     esac
 done
 
+version=`basename $toolchain`
 if [ ! -d $toolchain ]; then
     echo "Toolchain path not found: $toolchain"
     exit 1
