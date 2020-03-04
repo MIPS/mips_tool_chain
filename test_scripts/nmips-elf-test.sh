@@ -36,7 +36,7 @@ if [ ! -d $SRCDIR/gcc ]; then
     exit 1
 fi
 
-HOSTTOOLS=/projects/mipssw/toolchains/x86_64-pc-linux-gnu/4.9.4-centos6/
+HOSTTOOLS=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}x86_64-pc-linux-gnu/4.9.4-centos6
 
 declare -a configs
 configs=(
