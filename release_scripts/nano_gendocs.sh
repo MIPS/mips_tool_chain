@@ -1,11 +1,19 @@
-#!/bin/bash -x
+#!/bin/bash
 
-if [ -z $JDK ]; then
-    JDK=/usr/java/jdk-11.0.2
-fi
+JDK=${JDK:-/usr/java/jdk-11.0.2}
 
 if [ -d $JDK ]; then
     PATH=$JDK/bin:$PATH
+else
+    echo "Error: JDK missing"
+    exit
+fi
+
+DITA_HOME=${DITA_HOME:-/opt/dita-ot-2.4.4}
+
+if [ ! -d $DITA_HOME ]; then
+    echo "Error: Missing Dita installation"
+    exit
 fi
 
 PATH=/opt/dita-ot-2.4.4/bin:$PATH
