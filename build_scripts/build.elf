@@ -8,7 +8,7 @@
 TOPDIR=/directory
 GITHOME=ssh://git@github.com/MIPS
 TARGET=mips-mti-elf
-INSTALL=$TOPDIR/install-$TARGET
+INSTALL=${INSTALL:-$TOPDIR/install-$TARGET}
 BUILDINSTALL=$TOPDIR/install-build
 HOSTINSTALL=$TOPDIR/install-host
 OBJ=$TOPDIR/obj-$TARGET
