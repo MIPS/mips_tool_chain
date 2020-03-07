@@ -8,7 +8,7 @@
 TOPDIR=/directory
 GITHOME=ssh://git@github.com/MIPS
 TARGET=mips-mti-linux-gnu
-INSTALL=${INSTALL:-$TOPDIR/install-$TARGET}
+INSTALL=${MIPS_INSTALL:-$TOPDIR/install-$TARGET}
 BUILDINSTALL=$TOPDIR/install-build
 HOSTINSTALL=$TOPDIR/install-host
 OBJ=$TOPDIR/obj-$TARGET
@@ -16,7 +16,8 @@ BUILDOBJ=$TOPDIR/obj-build
 HOSTOBJ=$TOPDIR/obj-host
 SYSROOT=$INSTALL/sysroot
 HOSTTOOLSROOT=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}
-BUILDPATH=$INSTALL/bin
+BUILDPATH=${BUILDPATH}:$INSTALL/bin
+BUILDPATH=${BUILDPATH#:*} # trim leading :
 TOOLSVERSION=${TOOLSVERSION:-'Scratch/experimental build `date +%Y%m%d_%H%M`'}
 
 # Set the host. Supported hosts are:
