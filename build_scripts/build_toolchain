@@ -82,7 +82,7 @@ src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
             "llvm" "clang" "lld" "lldb" "compiler-rt" "musl" \
             "libunwind" "libcxx" "libcxxabi" "mingw:packages" \
             "mingw-w64:packages" "gettext:packages" "libiconv:packages" \
-            "libffi:packages" "texinfo:packages" \
+            "libffi:packages" "texinfo:packages" "expect:packages" "tcl:packages" \
 	    "binutils-binutils:binutils-gdb" "binutils-ld:binutils-gdb" \
 	    "binutils-gas:binutils-gdb" "gdb-py:binutils-gdb" "python:cpython")
 
@@ -1649,7 +1649,10 @@ function build_component() {
 	    CONFIGURE=""
 	    MAKE_TARGET_ALL=""
 	    MAKE_TARGET_INSTALL="" ;;
-	bison/*)
+	bison/*|expect/*)
+	;;
+	tcl/*)
+	     CONFIGURE="$src/unix/configure"
 	;;
 	python/*|Python/*)
 	    F=( "${F[@]}" "${H[@]}" "--without-ensurepip" "--disable-shared" )
@@ -1849,7 +1852,7 @@ else
 	for i in $components
 	do
 	    case $i in
-		gmp|mpfr|mpc|expat|termcap|ncurses|zlib|pixman|glib|libffi|libiconv|gettext|texinfo|binutils|binutils-gdb|binutils-binutils|binutils-gas|binutils-ld|initial_gcc|gcc|gold|newlib|smallclib|gdb|qemu|mingw|mingw-w64|llvm|llvm_multilibs|lldb_server|bison|Python|make|gdb-py|python|openssl)
+		gmp|mpfr|mpc|expat|termcap|ncurses|zlib|pixman|glib|libffi|libiconv|gettext|texinfo|binutils|binutils-gdb|binutils-binutils|binutils-gas|binutils-ld|initial_gcc|gcc|gold|newlib|smallclib|gdb|qemu|mingw|mingw-w64|llvm|llvm_multilibs|lldb_server|bison|Python|make|gdb-py|python|openssl|tcl|expect)
 		    build_component $i ;;
 		glibc|glibc_multilibs|uclibc|uclibc_multilibs|musl|musl_multilibs|sysroot)
 		    build_system_libs ;;
