@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # -----------------------------------------------------------------------------
+# Copyright (c) 2020, MIPS Tech LLC.
 # Copyright (c) 2014, Imagination Technologies Limited.
 # All rights reserved.
 #
@@ -78,8 +79,8 @@ src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
 	    "expat:packages" "termcap:packages" "ncurses:packages" \
 	    "zlib:packages" "glib:packages" "pixman:packages" "bison:packages" \
 	    "Python:packages" "make:packages" "openssl:packages"\
-	    "smallclib" \
-            "llvm" "clang" "lld" "lldb" "compiler-rt" "musl" \
+	    "smallclib" "packages:packages" \
+            "llvm" "clang" "lld" "lldb" "cmpiler-rt" "musl" \
             "libunwind" "libcxx" "libcxxabi" "mingw:packages" \
             "mingw-w64:packages" "gettext:packages" "libiconv:packages" \
             "libffi:packages" "texinfo:packages" "expect:packages" "tcl:packages" \
@@ -220,9 +221,7 @@ function parse_args() {
 
     init_default_src
 
-    if [ "$target" = "" ] ; then
-	target=mips-linux-gnu
-    fi
+
     if [ "$prefix" = "" ]; then
 	prefix=install
     fi
@@ -913,7 +912,13 @@ function build_one_glibc() {
     fi
     F=( "${F[@]}" "--host=$libc_target" )
     F=( "${F[@]}" "--disable-profile" "--without-gd" "--without-cvs" )
-    F=( "${F[@]}" "--enable-add-ons" "--enable-kernel=4.8.0" )
+    F=( "${F[@]}" "--enable-add-ons" )
+
+    case $target in
+	mips*-linux-*)
+	    F=( "${F[@]}" "--enable-kernel=4.8.0" )
+	    ;;
+    esac
     CONFIGURE="$src/configure"
     MAKE_TARGET_ALL="all"
     if [ "$sysrootlayout" = "old" ] ; then
@@ -1395,10 +1400,10 @@ function build_component() {
 	    if [ "$local_build_version" = "initial" ] ; then
 		MAKE_TARGET_ALL="all-gcc all-target-libgcc inhibit_libc=true"
 		MAKE_TARGET_INSTALL="install-gcc install-target-libgcc"
-		F=( "${F[@]}" "--enable-languages=c" "--without-headers" )
-		F=( "${F[@]}" "--disable-shared" "--disable-threads" )
+		F=( "${F[@]}" "--enable-languages=c,c++" "--without-headers" )
+		F=( "${F[@]}" "--disable-threads" "${F[@]}" "--disable-libssp" )
 		F=( "${F[@]}" "--disable-libquadmath" "--disable-libatomic" )
-		F=( "${F[@]}" "--with-sysroot=$sysroot" )
+		F=( "${F[@]}" "--with-sysroot=/" )
 		case $target in
 		    i686*-linux-* | x86_64*-linux-*)
 			glibc_version=`grep -e VERSION $src/../glibc/version.h  | grep -Eo '[0-9]+\.[0-9]+'`

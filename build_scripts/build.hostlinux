@@ -4,31 +4,37 @@
 
 TOPDIR=/directory
 GITHOME=ssh://git@github.com/MIPS
-TARGET=x86_64-pc-linux-gnu
-INSTALL=$TOPDIR/install-$TARGET
+TARGET=${TARGET:-x86_64-pc-linux-gnu}
+INSTALL=${HOST_INSTALL:-$TOPDIR/install-$TARGET}
 HOSTINSTALL=$TOPDIR/install-host
 OBJ=$TOPDIR/obj-$TARGET
 SYSROOT=$INSTALL/sysroot
 
 cd $TOPDIR
+if [ ! -d `dirname $INSTALL`  ]; then
+   mkdir -p `dirname $INSTALL`
+fi
 
-G="--path=$INSTALL/bin --git_home=$GITHOME"
-G="$G --build=$OBJ --prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT --jobs=3"
+G=( --path=$INSTALL/bin --git_home=$GITHOME --no-pdf  )
+G+=( --branch=gcc:gcc-4_9_4-release --branch=binutils:binutils-2_25_1 )
+G+=( --branch=glibc:mips_rel/2_12/hosttools --branch=packages:mips_rel/hosttools )
+BUILDG=("${G[@]}" --jobs=${JOBS:-8} --build=$OBJ --prefix=$INSTALL)
+G+=( "${BUILDG[@]}" --target=$TARGET --sysroot=$SYSROOT )
 
 # If you want to force an update of your sources before the build.
 # uncommment the next line.
 # b/build_toolchain update $G binutils expat gdb glibc gcc qemu
 
-# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# If you do not want to use the system gmp, mpfr, or mpc.
 # uncomment the next line.
-#b/build_toolchain update $G gmp mpfr mpc
+b/build_toolchain update "${G[@]}" packages gmp mpfr mpc
 
 # You can build these with a single run and listing all targets (in order)
 # they are listed seperately in order to make it easier to build/rebuild a
 # single component.
-
-b/build_toolchain build $G binutils || exit 1
-b/build_toolchain build $G initial_gcc || exit 1
-b/build_toolchain build $G linux_headers || exit 1
-b/build_toolchain build $G sysroot || exit 1
-b/build_toolchain build $G gcc || exit 1
+b/build_toolchain build "${G[@]}" binutils  --extra_config_opts="--program-prefix=$TARGET-" || exit 1
+b/build_toolchain update "${G[@]}" glibc
+b/build_toolchain build "${G[@]}" initial_gcc || exit 1
+b/build_toolchain build "${G[@]}" linux_headers || exit 1
+b/build_toolchain build "${G[@]}" sysroot || exit 1
+b/build_toolchain build "${G[@]}" gcc || exit 1

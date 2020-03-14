@@ -4,31 +4,38 @@
 
 TOPDIR=/directory
 GITHOME=ssh://git@github.com/MIPS
-TARGET=i686-w64-mingw32
-INSTALL=$TOPDIR/install-$TARGET
+TARGET=${TARGET:-x86_64-w64-mingw32}
+HOST=x86_64-pc-linux-gnu
+INSTALL=${HOST_INSTALL:-$TOPDIR/install-$TARGET}
+BUILDPATH=${BUILDPATH:-/projects/mipssw/toolchains/$HOST/4.9.4-centos6/bin}
 OBJ=$TOPDIR/obj-$TARGET
 SYSROOT=$INSTALL
 
 cd $TOPDIR
+if [ ! -d `dirname $INSTALL` ]; then
+   mkdir -p `dirname $INSTALL`
+fi
 
-G="--path=$INSTALL/bin --git_home=$GITHOME --build=$OBJ --prefix=$INSTALL"
-G="$G --target=$TARGET --sysroot=$SYSROOT --jobs=3"
+G=(--path=$INSTALL/bin:$BUILDPATH --git_home=$GITHOME --build=$OBJ --prefix=$INSTALL)
+G+=(--target=$TARGET --sysroot=$SYSROOT --jobs=${JOBS:-8} --no-pdf)
+G+=(--branch=gcc:gcc-4_9_4-release --branch=binutils:binutilsl-2_25_1)
+G+=(--branch=packages:mips_rel/hosttools)
 
 # If you want to force an update of your sources before the build.
 # uncommment the next line.
 # b/build_toolchain update $G binutils-gdb glibc gcc qemu
 
-# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# If you do not want to use the system gmp, mpfr, or mpc.
 # uncomment the next line.
-# b/build_toolchain update $G gmp mpfr mpc dejagnu
+b/build_toolchain update "${G[@]}" gmp mpfr mpc
 
 
 # You can build these with a single run and listing all targets (in order)
 # they are listed seperately in order to make it easier to build/rebuild a
 # single component.
 
-b/build_toolchain build $G binutils || exit 1
-b/build_toolchain build $G --prefix=$INSTALL/mingw mingw || exit 1
-b/build_toolchain build $G --make_target_all=all-gcc --make_target_install=install-gcc gcc || exit 1
-b/build_toolchain build $G --prefix=$INSTALL/mingw mingw-w64 || exit 1
-b/build_toolchain build $G gcc || exit 1
+b/build_toolchain build "${G[@]}" binutils  || exit 1
+b/build_toolchain build "${G[@]}" --prefix=$INSTALL/mingw mingw || exit 1
+b/build_toolchain build "${G[@]}" --make_target_all=all-gcc --make_target_install=install-gcc gcc || exit 1
+b/build_toolchain build "${G[@]}" --prefix=$INSTALL/mingw mingw-w64 --extra_config_opts="--with-libraries=winpthreads" || exit 1
+b/build_toolchain build "${G[@]}" gcc || exit 1
