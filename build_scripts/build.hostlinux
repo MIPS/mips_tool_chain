@@ -25,13 +25,16 @@ G+=( "${BUILDG[@]}" --target=$TARGET --sysroot=$SYSROOT )
 # uncommment the next line.
 # b/build_toolchain update $G binutils expat gdb glibc gcc qemu
 
+b/build_toolchain update "${G[@]}" packages
+
 # If you do not want to use the system gmp, mpfr, or mpc.
 # uncomment the next line.
-b/build_toolchain update "${G[@]}" packages gmp mpfr mpc
+b/build_toolchain update "${G[@]}" gmp mpfr mpc
 
 # You can build these with a single run and listing all targets (in order)
 # they are listed seperately in order to make it easier to build/rebuild a
 # single component.
+b/build_toolchain build "${G[@]}" texinfo || exit 1
 b/build_toolchain build "${G[@]}" binutils  --extra_config_opts="--program-prefix=$TARGET-" || exit 1
 b/build_toolchain update "${G[@]}" glibc
 b/build_toolchain build "${G[@]}" initial_gcc || exit 1

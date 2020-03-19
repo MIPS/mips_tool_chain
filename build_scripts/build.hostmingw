@@ -24,6 +24,7 @@ G+=(--branch=packages:mips_rel/hosttools)
 # If you want to force an update of your sources before the build.
 # uncommment the next line.
 # b/build_toolchain update $G binutils-gdb glibc gcc qemu
+b/build_toolchain update "${G[@]}" packages
 
 # If you do not want to use the system gmp, mpfr, or mpc.
 # uncomment the next line.
