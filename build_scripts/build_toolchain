@@ -1400,14 +1400,19 @@ function build_component() {
 	    if [ "$local_build_version" = "initial" ] ; then
 		MAKE_TARGET_ALL="all-gcc all-target-libgcc inhibit_libc=true"
 		MAKE_TARGET_INSTALL="install-gcc install-target-libgcc"
-		F=( "${F[@]}" "--enable-languages=c,c++" "--without-headers" )
-		F=( "${F[@]}" "--disable-threads" "${F[@]}" "--disable-libssp" )
 		F=( "${F[@]}" "--disable-libquadmath" "--disable-libatomic" )
-		F=( "${F[@]}" "--with-sysroot=/" )
 		case $target in
 		    i686*-linux-* | x86_64*-linux-*)
 			glibc_version=`grep -e VERSION $src/../glibc/version.h  | grep -Eo '[0-9]+\.[0-9]+'`
+			F=( "${F[@]}" "--enable-languages=c,c++" "--without-headers" )
+			F=( "${F[@]}" "--disable-threads" "--disable-libssp" )
+			F=( "${F[@]}" "--with-sysroot=/" )
 			F=( "${F[@]}" "--disable-multilib" "--with-glibc-version=$glibc_version" ) ;;
+		    mips*-linux-*)
+			F=( "${F[@]}" "--enable-languages=c" "--without-headers" )
+			F=( "${F[@]}" "--disable-shared" "--disable-threads" )
+			F=( "${F[@]}" "--with-sysroot=$sysroot" )
+			;;
 		esac
 	    else
 		MAKE_TARGET_ALL="all"
