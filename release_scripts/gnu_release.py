@@ -147,7 +147,6 @@ if True:
   f = open("%s/template/downloads.tmpl" % scriptpath, 'r')
   template = f.read()
   f.close()
-  print "Version %s" % version[:7]
   download=""
   if template.find ("<!-- ${REL_SUP_" + version[:7] + "} -->") > 0:
     download = "${REL_SUP_" + version[:7] + "} -->\n" + \
@@ -184,7 +183,7 @@ if True:
     newtoc += "\t    &nbsp; <a href=\"#" + version + "Docs\">Documentation</a>\n"
   else:
     newtoc += "\t    &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;</a>\n"
-  newtoc += "\t    &nbsp; <a href=\"#" version + "CompVer\">Component Versions</a>\n"
+  newtoc += "\t    &nbsp; <a href=\"#" + version + "CompVer\">Component Versions</a>\n"
   compver = re.search (r"#([0-9\.\-]*CompVer)", template)
   if compver:
     newtoc += "\t    &nbsp; <a href=\"" + compver.group(1) + "\">Component Versions</a>\n"
@@ -268,9 +267,9 @@ if True:
                     'r|gz')
     if tf:
       tf.extractall(mipsswinst_path)
-      subprocess.call (["chmod", "-R", "g+w,o-w", os.path.join(mipsswinst_path, 'mips-mti-elf', version])
+      subprocess.call (["chmod", "-R", "g+w,o-w", os.path.join(mipsswinst_path, 'mips-mti-elf', version)])
 
-    print("Extracting x86_64 linux toolchain to " + os.path.join(mipsswinst_path, 'mips-mti-linux-gnu', version)
+    print("Extracting x86_64 linux toolchain to " + os.path.join(mipsswinst_path, 'mips-mti-linux-gnu', version))
     tf = tarfile.open("Codescape.GNU.Tools.Package.%s.for.MIPS.MTI.Linux.CentOS-6.x86_64.tar.gz" % version,
                       'r|gz')
     if tf:
