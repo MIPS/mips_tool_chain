@@ -40,19 +40,23 @@ HOSTTOOLS=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}x86_64-pc-linux-gnu/4.9.
 
 declare -a configs
 configs=(
-    "mips-sim-mti32/-m32/-EL/-msoft-float" 
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=medium"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=large"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mpid"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=medium/-mpid"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=large/-mpid"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mno-gpopt"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=medium/-mno-gpopt"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=large/-mno-gpopt"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mno-gpopt/-mno-pcrel"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=medium/-mno-gpopt/-mno-pcrel"
-    "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=large/-mno-gpopt/-mno-pcrel")
+    "generic-sim/-m32/-EL/-msoft-float"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=medium"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=large"
+    "generic-sim/-m32/-EL/-msoft-float/-mpid"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=medium/-mpid"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=large/-mpid"
+    "generic-sim/-m32/-EL/-msoft-float/-mno-gpopt"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=medium/-mno-gpopt"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=large/-mno-gpopt"
+    "generic-sim/-m32/-EL/-msoft-float/-mno-gpopt/-mno-pcrel"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=medium/-mno-gpopt/-mno-pcrel"
+    "generic-sim/-m32/-EL/-msoft-float/-mcmodel=large/-mno-gpopt/-mno-pcrel")
 jobs=""
+
+# manipulate the test_installed script to generate a modified site.exp
+sed 's|^set CFLAGS.*$|set CFLAGS \"\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.gcc"$$"
+chmod +x $SRCDIR/gcc/contrib/test_installed.gcc"$$"
 
 if [ $DO = "gcc" -o $DO = "both" -o $DO = "all" ]; then
 for cfg in "${configs[@]}"; do
@@ -60,28 +64,29 @@ for cfg in "${configs[@]}"; do
     mkdir $name
     pushd $name
     rm -Rf *
-    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v $4 &> test.log &
+    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v $4 &> test.log &
     popd
 done
 fi
 
 # manipulate the test_installed script to generate a modified site.exp
-sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
+sed 's|^set GCC_UNDER_TEST.*$|set GCC_UNDER_TEST \"'$TOOLCHAIN'/bin/nanomips-elf-gcc\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.g++"$$"
+chmod +x $SRCDIR/gcc/contrib/test_installed.g++"$$"
 
 if [ $DO = "g++" -o $DO = "both" -o $DO = "all" ]; then
 for cfg in "${configs[@]}"; do
     name="gxx_"`echo ${cfg#*/} | tr -d - | tr -d =  | tr / _`
-    
+
     mkdir $name
     pushd $name
     rm -Rf *
 
-    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v  $4 &> test.log &
+    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TOOLCHAIN/bin/nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v  $4 &> test.log &
    popd
 done
 
 fi
 
 wait
-# revert script change
-sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed
+# cleanup
+rm -f $SRCDIR/gcc/contrib/test_installed.gcc"$$" $SRCDIR/gcc/contrib/test_installed.g++"$$"

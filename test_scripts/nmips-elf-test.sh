@@ -54,19 +54,24 @@ configs=(
     "mips-sim-mti32/-m32/-EL/-msoft-float/-mcmodel=large/-mno-gpopt/-mno-pcrel")
 jobs=""
 
+# manipulate the test_installed script to generate a modified site.exp
+sed 's|^set CFLAGS.*$|set CFLAGS \"\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.gcc"$$"
+chmod +x $SRCDIR/gcc/contrib/test_installed.gcc"$$"
+
 if [ $DO = "gcc" -o $DO = "both" -o $DO = "all" ]; then
 for cfg in "${configs[@]}"; do
     name="gcc_"`echo ${cfg#*/} | tr -d - | tr -d =  | tr / _`
     mkdir $name
     pushd $name
     rm -Rf *
-    PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg SIM=$TOOLCHAIN/bin/nanomips-elf-run  -v -v -v $4 &> test.log &
+    PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg SIM=$TOOLCHAIN/bin/nanomips-elf-run  -v -v -v $4 &> test.log &
     popd
 done
 fi
 
 # manipulate the test_installed script to generate a modified site.exp
-sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
+sed 's|^set GCC_UNDER_TEST.*$|set GCC_UNDER_TEST \"'${TOOLCHAIN}'/bin/${target+$target-}gcc\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.g++"$$"
+chmod +x $SRCDIR/gcc/contrib/test_installed.g++"$$"
 if [ $DO = "g++" -o $DO = "both" -o $DO = "all" ]; then
 for cfg in "${configs[@]}"; do
     name="gxx_"`echo ${cfg#*/} | tr -d - | tr -d =  | tr / _`
@@ -75,11 +80,11 @@ for cfg in "${configs[@]}"; do
     pushd $name
     rm -Rf *
 
-    PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg SIM=$TOOLCHAIN/bin/nanomips-elf-run -v -v -v  $4 &> test.log &
+    PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TOOLCHAIN/bin/nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg SIM=$TOOLCHAIN/bin/nanomips-elf-run -v -v -v  $4 &> test.log &
     popd
 done
 fi
 
 wait
-# revert script change
-sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed
+# cleanup
+rm -f $SRCDIR/gcc/contrib/test_installed.gcc"$$" $SRCDIR/gcc/contrib/test_installed.g++"$$"
