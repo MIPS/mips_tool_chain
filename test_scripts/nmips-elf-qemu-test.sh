@@ -60,10 +60,13 @@ for cfg in "${configs[@]}"; do
     mkdir $name
     pushd $name
     rm -Rf *
-    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu I7200 -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v $4 &> test.log &
+    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=nanomips-elf-gcc --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v $4 &> test.log &
     popd
 done
 fi
+
+# manipulate the test_installed script to generate a modified site.exp
+sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
 
 if [ $DO = "g++" -o $DO = "both" -o $DO = "all" ]; then
 for cfg in "${configs[@]}"; do
@@ -73,9 +76,12 @@ for cfg in "${configs[@]}"; do
     pushd $name
     rm -Rf *
 
-    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu I7200 -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v  $4 &> test.log &
-    popd
+    DEJAGNU_SIM_LDSCRIPT="-Tuhi32.ld" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" DEJAGNU_SIM_OPTIONS="-cpu nanomips-generic -semihosting -nographic -kernel"  DEJAGNU_SIM=$TOOLCHAIN/bin/qemu-system-nanomips PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH HOSTCC=x86_64-pc-linux-gnu-gcc $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=nanomips-elf-g++ --prefix=$TOOLCHAIN --target=nanomips-elf --target_board=$cfg -v -v -v  $4 &> test.log &
+   popd
 done
+
 fi
 
 wait
+# revert script change
+sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed

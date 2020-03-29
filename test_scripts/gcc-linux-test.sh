@@ -214,6 +214,8 @@ if [[ $RUNLIST =~ gcc ]]; then
     done
 fi
 
+# manipulate the test_installed script to generate a modified site.exp
+sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
 if [[ $RUNLIST =~ g\+\+ ]]; then
     DEJAGNU_SIM_GCC=$TOOLCHAIN/bin/$TRIPLET"-g++"
     for cfg in "${test_configs[@]}"; do
@@ -235,3 +237,5 @@ if [[ $RUNLIST =~ g\+\+ ]]; then
 fi
 
 wait
+# revert script change
+sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed
