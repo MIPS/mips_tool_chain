@@ -1408,7 +1408,7 @@ function build_component() {
 			F=( "${F[@]}" "--disable-threads" "--disable-libssp" )
 			F=( "${F[@]}" "--with-sysroot=/" )
 			F=( "${F[@]}" "--disable-multilib" "--with-glibc-version=$glibc_version" ) ;;
-		    mips*-linux-*)
+		    nanomips*-linux-*|mips*-linux-*)
 			F=( "${F[@]}" "--enable-languages=c" "--without-headers" )
 			F=( "${F[@]}" "--disable-shared" "--disable-threads" )
 			F=( "${F[@]}" "--with-sysroot=$sysroot" )
