@@ -93,15 +93,20 @@ b/build_toolchain build "${G[@]}" gcc || exit 1
 b/build_toolchain build "${HOSTG[@]}" expat || exit 1
 b/build_toolchain build "${HOSTG[@]}" termcap || exit 1
 b/build_toolchain build "${HOSTG[@]}" ncurses || exit 1
+b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
+b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
 b/build_toolchain build "${G[@]}" gdb || exit 1
 b/build_toolchain build "${HOSTG[@]}" zlib || exit 1
 b/build_toolchain build "${HOSTG[@]}" openssl || exit 1
 b/build_toolchain build "${PYTHONG[@]}" python || exit 1
-b/build_toolchain build "${G[@]}" gdb-py || exit 1
+case x$HOSTTRIPLE in
+  # This only works for linux hosts
+  xx86_64-pc-linux-gnu | xi686-pc-linux-gnu )
+  b/build_toolchain build "${G[@]}" gdb-py || exit 1
+  ;;
+esac
 b/build_toolchain build "${HOSTG[@]}" pixman || exit 1
 b/build_toolchain build "${HOSTG[@]}" libffi || exit 1
-b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
-b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
 b/build_toolchain build "${HOSTG[@]}" glib || exit 1
 b/build_toolchain build "${G[@]}" qemu || exit 1
 

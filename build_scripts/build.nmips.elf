@@ -95,6 +95,8 @@ b/build_toolchain build "${G[@]}" gcc || exit 1
 b/build_toolchain build "${HOSTG[@]}" expat || exit 1
 b/build_toolchain build "${HOSTG[@]}" termcap || exit 1
 b/build_toolchain build "${HOSTG[@]}" ncurses || exit 1
+b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
+b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
 b/build_toolchain build "${G[@]}" gdb || exit 1
 b/build_toolchain build "${HOSTG[@]}" zlib || exit 1
 b/build_toolchain build "${HOSTG[@]}" openssl || exit 1
@@ -107,10 +109,5 @@ case x$HOSTTRIPLE in
 esac
 b/build_toolchain build "${HOSTG[@]}" pixman || exit 1
 b/build_toolchain build "${HOSTG[@]}" libffi || exit 1
-b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
-b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
 b/build_toolchain build "${HOSTG[@]}" glib || exit 1
 b/build_toolchain build "${G[@]}" qemu || exit 1
-
-# This does a single run with default arch, endian, abi, and float setting.
-#b/build_toolchain check "${G[@]}" --runtestflags="--target_board='mips-sim-mti32'" gcc
