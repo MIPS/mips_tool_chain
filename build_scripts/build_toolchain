@@ -85,7 +85,8 @@ src_repos=( "glibc" "newlib" "dejagnu" "binutils:binutils-gdb" \
             "mingw-w64:packages" "gettext:packages" "libiconv:packages" \
             "libffi:packages" "texinfo:packages" "expect:packages" "tcl:packages" \
 	    "binutils-binutils:binutils-gdb" "binutils-ld:binutils-gdb" \
-	    "binutils-gas:binutils-gdb" "gdb-py:binutils-gdb" "python:cpython")
+	    "binutils-gas:binutils-gdb" "gdb-py:binutils-gdb" "python:cpython" \
+	    "symlinks:packages" )
 
 src_list=( )
 src_arglist=( )
@@ -1702,6 +1703,15 @@ function build_component() {
             build_llvm_component $component $target
             check_return build_llvm_component $?
             return ;;
+	symlinks/*)
+	    CONFIGURE=""
+	    cp -a $src $bld_dir/
+	    # massage the Makefile for local compile
+	    sed -i -e 's/CC = gcc/CC = x86_64-pc-linux-gnu-gcc/' \
+		-e 's|/usr/local|'$prefix'|' \
+		-e  's|\(.*\)man8|#\1|' \
+		-e 's/-o root -g root//' $bld_dir/$component/Makefile
+	    ;;
 	*)
 	    echo "Bad build component/target ($component/$target)"; exit 1 ;;
     esac
@@ -1862,7 +1872,7 @@ else
 	for i in $components
 	do
 	    case $i in
-		gmp|mpfr|mpc|expat|termcap|ncurses|zlib|pixman|glib|libffi|libiconv|gettext|texinfo|binutils|binutils-gdb|binutils-binutils|binutils-gas|binutils-ld|initial_gcc|gcc|gold|newlib|smallclib|gdb|qemu|mingw|mingw-w64|llvm|llvm_multilibs|lldb_server|bison|Python|make|gdb-py|python|openssl|tcl|expect)
+		gmp|mpfr|mpc|expat|termcap|ncurses|zlib|pixman|glib|libffi|libiconv|gettext|texinfo|binutils|binutils-gdb|binutils-binutils|binutils-gas|binutils-ld|initial_gcc|gcc|gold|newlib|smallclib|gdb|qemu|mingw|mingw-w64|llvm|llvm_multilibs|lldb_server|bison|Python|make|gdb-py|python|openssl|tcl|expect|symlinks)
 		    build_component $i ;;
 		glibc|glibc_multilibs|uclibc|uclibc_multilibs|musl|musl_multilibs|sysroot)
 		    build_system_libs ;;

@@ -85,6 +85,7 @@ b/build_toolchain update "${G[@]}" gmp mpfr mpc
 b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
 b/build_toolchain build "${BUILDG[@]}" tcl || exit 1
 b/build_toolchain build "${BUILDG[@]}" expect || exit 1
+b/build_toolchain build "${BUILDG[@]}" symlinks || exit 1
 
 b/build_toolchain build "${G[@]}" binutils || exit 1
 b/build_toolchain build "${G[@]}" gold || exit 1
