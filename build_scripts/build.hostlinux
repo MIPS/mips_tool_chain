@@ -16,7 +16,7 @@ if [ ! -d `dirname $INSTALL`  ]; then
 fi
 
 G=( --path=$INSTALL/bin --git_home=$GITHOME --no-pdf  )
-G+=( --branch=gcc:gcc-4_9_4-release --branch=binutils:binutils-2_25_1 )
+G+=( --branch=gcc:gcc-4_9_4-release --branch=binutils:binutils-2_25-branch )
 G+=( --branch=glibc:mips_rel/2_12/hosttools --branch=packages:mips_rel/hosttools )
 BUILDG=("${G[@]}" --jobs=${JOBS:-8} --build=$OBJ --prefix=$INSTALL)
 G+=( "${BUILDG[@]}" --target=$TARGET --sysroot=$SYSROOT )

@@ -18,7 +18,7 @@ fi
 
 G=(--path=$INSTALL/bin:$BUILDPATH --git_home=$GITHOME --build=$OBJ --prefix=$INSTALL)
 G+=(--target=$TARGET --sysroot=$SYSROOT --jobs=${JOBS:-8} --no-pdf)
-G+=(--branch=gcc:gcc-4_9_4-release --branch=binutils:binutilsl-2_25_1)
+G+=(--branch=gcc:gcc-4_9_4-release --branch=binutils:binutils-2_25-branch)
 G+=(--branch=packages:mips_rel/hosttools)
 
 # If you want to force an update of your sources before the build.
@@ -35,6 +35,7 @@ b/build_toolchain update "${G[@]}" gmp mpfr mpc
 # they are listed seperately in order to make it easier to build/rebuild a
 # single component.
 
+b/build_toolchain build "${G[@]}" texinfo  || exit 1
 b/build_toolchain build "${G[@]}" binutils  || exit 1
 b/build_toolchain build "${G[@]}" --prefix=$INSTALL/mingw mingw || exit 1
 b/build_toolchain build "${G[@]}" --make_target_all=all-gcc --make_target_install=install-gcc gcc || exit 1
