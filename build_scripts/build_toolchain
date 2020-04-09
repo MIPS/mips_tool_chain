@@ -260,7 +260,7 @@ function parse_args() {
 	mips*img*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
 	mips*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
 	nanomips*) version_arglist=( "$version_arglist" "linux:nda" ) ;;
-	i686*|x86_64*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
+	i686*|x86_64*) version_arglist=( "$version_arglist" "linux:4.15.0" ) ;;
     esac
 
     if [ "$bld_dir" != "" ]; then
@@ -374,7 +374,7 @@ function check_src() {
 		    fi
 		fi
 	    fi
-	    if [ "$src" = "$git_home/packages.git" ] ; then
+	    if [ "$src" = "$git_home/packages.git" -a "$name" != "packages" ] ; then
 		if [ ! -d $src_dir/packages ] ; then
 		    (cd $src_dir; git clone $git_args $git_src packages)
 		fi
