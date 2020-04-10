@@ -1,0 +1,40 @@
+#!/bin/bash
+# This script builds qemu for x86_64 host
+
+TOPDIR=/directory
+GITHOME=ssh://git@github.com/MIPS
+TARGET=${TARGET:-x86_64-pc-linux-gnu}
+INSTALL=${HOST_INSTALL:-$TOPDIR/install-$TARGET}
+HOSTINSTALL=$TOPDIR/install-host
+OBJ=$TOPDIR/obj-$TARGET
+SYSROOT=$INSTALL/sysroot
+cd $TOPDIR
+
+G=( --path=$INSTALL/bin --git_home=$GITHOME --no-pdf  )
+G+=( --branch=--branch=packages:master )
+BUILDG=("${G[@]}" --jobs=${JOBS:-8} --build=$OBJ --prefix=$INSTALL)
+G+=( "${BUILDG[@]}" --target=$TARGET --sysroot=$SYSROOT )
+G+=( --hostlibs=$INSTALL )
+
+# If you want to force an update of your sources before the build.
+# uncommment the next line.
+# b/build_toolchain update $G binutils expat gdb glibc gcc qemu
+
+# If you do not want to use the system gmp, mpfr, mpc, or dejagnu.
+# uncomment the next line.
+#b/build_toolchain update "${G[@]}" gmp mpfr mpc
+
+# You can build these with a single run and listing all targets (in order)
+# they are listed seperately in order to make it easier to build/rebuild a
+# single component.
+#b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
+#b/build_toolchain build "${G[@]}" binutils  --extra_config_opts="--program-prefix=$TARGET-" || exit 1
+#b/build_toolchain build "${G[@]}" initial_gcc || exit 1
+#b/build_toolchain build "${G[@]}" linux_headers || exit 1
+#b/build_toolchain build "${G[@]}" sysroot || exit 1
+#b/build_toolchain build "${G[@]}" gcc || exit 1
+
+b/build_toolchain build "${G[@]}" libiconv || exit 1
+b/build_toolchain build "${G[@]}" glib || exit 1
+b/build_toolchain build "${G[@]}" linux_headers || exit 1
+b/build_toolchain build "${G[@]}" qemu || exit 1
