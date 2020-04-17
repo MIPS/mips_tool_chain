@@ -157,17 +157,17 @@
 		<h4>Published on April 16, 2020</h4>
 		<h3 id="2019.09-02NewFeatures">2019.09-02 New Features</h3>
 		<ul>
-		<li>Implement synthesized conditional xor/or. This reduces the number of conditional moves on MIPS in GCC.</li>
-		<li>Expand 128-bit widening multiplication instructions on MIPS64R6 in GCC.</li>
-		<li>Add the MIPS-specific modulo by power of two expander on MIPS in GCC.
+		<li>Implement synthesized conditional xor/or in the compiler. This reduces the number of conditional moves.</li>
+		<li>Expand 128-bit widening multiplication instructions on MIPS64R6 in the compiler.</li>
+		<li>Add the MIPS-specific modulo by power of two expander in the compiler.
 		</ul>
 		<h3 id="2019.09-02BugFixes">2019.09-02 Bug Fixes</h3>
 		<ul>
-		<li>Fix checking of anti-dependence for bonded load pairs on MIPS in GCC (PP129401).</li>
+		<li>Fix checking of anti-dependence for bonded load pairs in the compiler (PP129401).</li>
 		</ul>
 		<h3 id="2019.09-02OtherChanges">2019.09-02 Other Changes</h3>
 		<ul>
-		<li>Remove "new" MIPS TLS access patterns in GCC.</li>
+		<li>None</li>
 		</ul>
 		<h3 id="2019.09-02KnownIssues">2019.09-02 Known issues</h3>
 		<ul>
@@ -264,6 +264,7 @@
 		</ul>
 		<h3 id="2019.09-01KnownIssues">2019.09-01 Known issues</h3>
 		<ul>
+                  <li>The bonded load pairs may yield wrong code. The workaround is to use -mno-load-store-pairs in the compiler.</li>
 		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
 		  <li>Local or initial exec TLS variables returning value in <i>$v1</i> register may cause a register allocation failure in some situations. The workaround is to declare the <i>$v1</i> register as clobbered with <i>asm&nbsp;volatile("":::"v1");</i> statement between the offending TLS access and the return statement.</li>
 		  <li>Python interpreter and gdb with python-scripting are not provided for Windows toolchains.</li>
@@ -323,6 +324,7 @@
 		</ul>
 		<h3 id="2019.02-01KnownIssues">2019.02-01 Known issues</h3>
 		<ul>
+                  <li>The bonded load pairs may yield wrong code. The workaround is to use -mno-load-store-pairs in the compiler.</li>
 		  <li>Parts of the IIR filter from EEMBC show 30-50% performance degradation versus a GCC 6.3 based toolkit.</li>
 		  <li>Codesize comparison againg GCC 6.3 is generally better for both O2 and Os optimization levels, however there are few outliers which show up to 10% size increase.</li>
 		  <li>MSA calling convention is historically broken for big-endian targets.</li>
@@ -388,6 +390,7 @@
 		</ul>
 		<h3 id="2018.09-03KnownIssues">2018.09-03 Known issues</h3>
 		<ul>
+                  <li>The bonded load pairs may yield wrong code. The workaround is to use -mno-load-store-pairs in the compiler.</li>
 		  <li>MIPS BFD linker can't handle PCHI16 relocations for negative offsets larger than 32k.</li>
 		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
 		  <li><i>strcmp()</i> gives incorrect result under the following conditions:
@@ -423,6 +426,7 @@
 		</ul>
 		<h3 id="2018.11-01KnownIssues">2018.11-01 Known issues</h3>
 		<ul>
+                  <li>The bonded load pairs may yield wrong code. The workaround is to use -mno-load-store-pairs in the compiler.</li>
 		  <li>Performance with the new toolchain is generally better, however there are few outliers which are being investigated.
 		    <ul>
 		    <li>Load/store bonding support for MIPSR6 cores is sub-optimal, causing up to 17% performance degradation in some benchmarks versus a GCC 6.3 based toolkit.</li>
@@ -491,6 +495,7 @@
 		</ul>
 		<h3 id="2018.09-02KnownIssues">2018.09-02 Known issues</h3>
 		<ul>
+                  <li>The bonded load pairs may yield wrong code. The workaround is to use -mno-load-store-pairs in the compiler.</li>
 		  <li>MIPS BFD linker can't handle PCHI16 relocations for negative offsets larger than 32k.</li>
 		  <li>Linker scripts provided with the bare metal toolchain are not compatible with GOLD.</li>
 		  <li><i>strcmp()</i> gives incorrect result under the following conditions:
