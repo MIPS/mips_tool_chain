@@ -1,4 +1,4 @@
-
+#!/bin/bash
 # This script uses the build script to create a glibc based linux cross
 # GCC package.  Set TOPDIR and TARGET before running.  TOPDIR should be
 # The directory where you want to build everything (it will contain subdirs
@@ -65,7 +65,7 @@ BUILDPATH="$BUILDINSTALL/bin:${BUILDPATH}:${HOSTINSTALL}/bin"
 
 cd $TOPDIR
 
-G=(--path=$BUILDPATH --git_home="$GITHOME --jobs=${JOBS:-8})
+G=(--path=$BUILDPATH --git_home=$GITHOME --jobs=${JOBS:-8})
 BUILDG=("${G[@]}" --build=$BUILDOBJ --prefix=$BUILDINSTALL)
 G+=($HOSTOPTIONS --buildlibs=$BUILDINSTALL --hostlibs=$HOSTINSTALL)
 HOSTG=("${G[@]}" --build=$HOSTOBJ --prefix=$HOSTINSTALL)
