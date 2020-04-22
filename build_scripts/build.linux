@@ -18,7 +18,8 @@ SYSROOT=$INSTALL/sysroot
 HOSTTOOLSROOT=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}
 BUILDPATH=${BUILDPATH}:$INSTALL/bin
 BUILDPATH=${BUILDPATH#:*} # trim leading :
-TOOLSVERSION=${TOOLSVERSION:-'Scratch/experimental build `date +%Y%m%d_%H%M`'}
+DATE=`date +%Y%m%d_%H%M`
+TOOLSVERSION=${TOOLSVERSION:-"Scratch/experimental build for mti-linux-gnu $DATE"}
 
 # Set the host. Supported hosts are:
 # x86_64-pc-linux-gnu - 64-bit Linux (CentOS 5 upwards)
