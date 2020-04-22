@@ -195,6 +195,9 @@ jcount=0
 declare -a jqueue
 
 if [[ $RUNLIST =~ gcc ]]; then
+    # manipulate the test_installed script to generate a modified site.exp
+    sed 's|^set CFLAGS.*$|set CFLAGS \"\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.gcc"$$"
+    chmod +x $SRCDIR/gcc/contrib/test_installed.gcc"$$"
     DEJAGNU_SIM_GCC=$TOOLCHAIN/bin/$TRIPLET"-gcc"
     for cfg in "${test_configs[@]}"; do
 	cfg=$cfg$EXTRA_ARGS
@@ -208,15 +211,16 @@ if [[ $RUNLIST =~ gcc ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
+	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg  -v -v -v &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
 fi
 
-# manipulate the test_installed script to generate a modified site.exp
-sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
 if [[ $RUNLIST =~ g\+\+ ]]; then
+    # manipulate the test_installed script to generate a modified site.exp
+    sed 's|^set GCC_UNDER_TEST.*$|set GCC_UNDER_TEST \"${target+$target-}gcc\"\nset HOSTCC \"gcc\"\nset HOSTCLFAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.g++"$$"
+    chmod +x $SRCDIR/gcc/contrib/test_installed.g++"$$"
     DEJAGNU_SIM_GCC=$TOOLCHAIN/bin/$TRIPLET"-g++"
     for cfg in "${test_configs[@]}"; do
 	cfg=$cfg$EXTRA_ARGS
@@ -230,12 +234,12 @@ if [[ $RUNLIST =~ g\+\+ ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
+	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg -v -v -v &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
 fi
 
 wait
-# revert script change
-sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed
+# cleanup
+rm -f $SRCDIR/gcc/contrib/test_installed.gcc"$$" $SRCDIR/gcc/contrib/test_installed.g++"$$"

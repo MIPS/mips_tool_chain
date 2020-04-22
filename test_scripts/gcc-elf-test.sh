@@ -196,6 +196,9 @@ jcount=0
 declare -a jqueue
 
 if [[ $RUNLIST =~ gcc ]]; then
+    # manipulate the test_installed script to generate a modified site.exp
+    sed 's|^set CFLAGS.*$|set CFLAGS \"\"\nset HOSTCC \"gcc\"\nset HOSTCFLAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.gcc"$$"
+    chmod +x $SRCDIR/gcc/contrib/test_installed.gcc"$$"
     for cfg in "${test_configs[@]}"; do
 	cfg=$cfg$EXTRA_CONF
 	name="gcc_"`echo ${cfg#*/} | tr -d - | tr -d =  | tr / _`
@@ -215,10 +218,11 @@ if [[ $RUNLIST =~ gcc ]]; then
     done
 fi
 
-# manipulate the test_installed script to generate a modified site.exp
-sed -i 's|^\(set GCC_UNDER_TEST.*\)$|set GCC_UNDER_TEST \"${prefix}${prefix+/bin/}${target+$target-}gcc\";#\1|' $SRCDIR/gcc/contrib/test_installed
 if [[ $RUNLIST =~ g\+\+ ]]; then
-    for cfg in "${test_configs[@]}"; do
+	# manipulate the test_installed script to generate a modified site.exp
+	sed 's|^set GCC_UNDER_TEST.*$|set GCC_UNDER_TEST \"${target+$target-}gcc\"\nset HOSTCC \"gcc\"\nset HOSTCLFAGS \"\"|' $SRCDIR/gcc/contrib/test_installed > $SRCDIR/gcc/contrib/test_installed.g++"$$"
+	chmod +x $SRCDIR/gcc/contrib/test_installed.g++"$$"
+        for cfg in "${test_configs[@]}"; do
 	cfg=$cfg$EXTRA_CONF
 	name="gxx_"`echo ${cfg#*/} | tr -d - | tr -d =  | tr / _`	
 	mkdir $name
@@ -238,5 +242,5 @@ if [[ $RUNLIST =~ g\+\+ ]]; then
 fi
 
 wait
-# revert script change
-sed -i 's|^set GCC_UNDER_TEST[^#]*#||' $SRCDIR/gcc/contrib/test_installed
+# cleanup
+rm -f $SRCDIR/gcc/contrib/test_installed.gcc"$$" $SRCDIR/gcc/contrib/test_installed.g++"$$"
