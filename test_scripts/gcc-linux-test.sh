@@ -87,6 +87,7 @@ fi
 declare -a test_configs
 declare -a img_configs
 declare -a mti_configs
+declare -a umipsr6_configs # Deprecated configs
 
 img_configs=(
      "multi-sim/-mips64r6/-mabi=64/-EL/-mhard-float"
@@ -97,12 +98,8 @@ img_configs=(
      "multi-sim/-mips64r6/-mabi=n32/-EB/-msoft-float"
      "multi-sim/-mips32r6/-mabi=32/-EL/-mhard-float"
      "multi-sim/-mips32r6/-mabi=32/-EL/-msoft-float"
-     "multi-sim/-mips32r6/-mabi=32/-EL/-mhard-float/-mmicromips"
-     "multi-sim/-mips32r6/-mabi=32/-EL/-msoft-float/-mmicromips"
      "multi-sim/-mips32r6/-mabi=32/-EB/-mhard-float"
      "multi-sim/-mips32r6/-mabi=32/-EB/-msoft-float"
-     "multi-sim/-mips32r6/-mabi=32/-EB/-mhard-float/-mmicromips"
-     "multi-sim/-mips32r6/-mabi=32/-EB/-msoft-float/-mmicromips"
 )
 
 mti_configs=(
@@ -116,6 +113,13 @@ mti_configs=(
     "multi-sim/-mabi=32/-EL/-msoft-float/-mmicromips"
     "multi-sim/-mabi=32/-EB/-mhard-float/-mnan=2008"
     "multi-sim/-mabi=32/-EB/-msoft-float"
+    )
+
+umipsr6_configs=(
+    "multi-sim/-mips32r6/-mabi=32/-EL/-mhard-float/-mmicromips"
+    "multi-sim/-mips32r6/-mabi=32/-EL/-msoft-float/-mmicromips"
+    "multi-sim/-mips32r6/-mabi=32/-EB/-mhard-float/-mmicromips"
+    "multi-sim/-mips32r6/-mabi=32/-EB/-msoft-float/-mmicromips"
     )
 
 if [[ $CONFIG == mti ]]; then
@@ -154,7 +158,7 @@ function get_qemu_cpu () {
 	if [[ $config =~ -mabi=(n32|64) ]]; then
 	    cpu=MIPS64R2-generic
 	else
-	    if [[ $config =~ (mnan=2008|msoft-float) ]]; then
+	    if [[ $config =~ (mnan=2008|msoft-float|mmicromips) ]]; then
 		cpu=P5600
 	    else
 		cpu=74Kf

@@ -87,6 +87,7 @@ fi
 declare -a test_configs
 declare -a img_configs
 declare -a mti_configs
+declare -a umipsr6_configs
 
 img_configs=(
     "generic-sim/-mips64r6/-mabi=64/-EL/-march=p6600"
@@ -99,17 +100,12 @@ img_configs=(
     "generic-sim/-mips64r6/-mabi=n32/-EL/-msoft-float"
     "generic-sim/-mips64r6/-mabi=n32/-EB/-mhard-float"
     "generic-sim/-mips64r6/-mabi=n32/-EB/-msoft-float"
-    "generic-sim/-mips32r6/-mabi=32/-EL/-march=m6201/-mmicromips"
     "generic-sim/-mips32r6/-mabi=32/-EL/-march=m6201"
     "generic-sim/-mips32r6/-mabi=32/-EL/-mhard-float/-msingle-float/-fshort-double"
     "generic-sim/-mips32r6/-mabi=32/-EL/-mhard-float"
     "generic-sim/-mips32r6/-mabi=32/-EL/-msoft-float"
-    "generic-sim/-mips32r6/-mabi=32/-EL/-mhard-float/-mmicromips"
-    "generic-sim/-mips32r6/-mabi=32/-EL/-msoft-float/-mmicromips"
     "generic-sim/-mips32r6/-mabi=32/-EB/-mhard-float"
     "generic-sim/-mips32r6/-mabi=32/-EB/-msoft-float"
-    "generic-sim/-mips32r6/-mabi=32/-EB/-mhard-float/-mmicromips"
-    "generic-sim/-mips32r6/-mabi=32/-EB/-msoft-float/-mmicromips"
 )
 
 mti_configs=(
@@ -136,6 +132,14 @@ mti_configs=(
     "generic-sim/-mabi=32/-EB/-mhard-float/-mmicromips"
     "generic-sim/-mabi=32/-EB/-msoft-float/-mmicromips"
     )
+
+umipsr6_configs=(
+    "generic-sim/-mips32r6/-mabi=32/-EL/-march=m6201/-mmicromips"
+    "generic-sim/-mips32r6/-mabi=32/-EL/-mhard-float/-mmicromips"
+    "generic-sim/-mips32r6/-mabi=32/-EL/-msoft-float/-mmicromips"
+    "generic-sim/-mips32r6/-mabi=32/-EB/-mhard-float/-mmicromips"
+    "generic-sim/-mips32r6/-mabi=32/-EB/-msoft-float/-mmicromips"
+)
 
 if [[ $CONFIG == mti ]]; then
     test_configs=( "${mti_configs[@]}" )
@@ -170,7 +174,7 @@ function get_qemu_cpu () {
 	if [[ $config =~ -mabi=(n32|64) ]]; then
 	    cpu=MIPS64R2-generic
 	else
-	    if [[ $config =~ (mnan=2008|msoft-float) ]]; then
+	    if [[ $config =~ (mnan=2008|msoft-float|mmicromips) ]]; then
 		cpu=P5600
 	    else
 		cpu=74Kf
@@ -212,7 +216,7 @@ if [[ $RUNLIST =~ gcc ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_LDSCRIPT="$DEJAGNU_SIM_LDSCRIPT" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
+	DEJAGNU_SIM_LDSCRIPT="$DEJAGNU_SIM_LDSCRIPT" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
@@ -235,7 +239,7 @@ if [[ $RUNLIST =~ g\+\+ ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_LDSCRIPT="$DEJAGNU_SIM_LDSCRIPT" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
+	DEJAGNU_SIM_LDSCRIPT="$DEJAGNU_SIM_LDSCRIPT" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
