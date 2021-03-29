@@ -1657,9 +1657,11 @@ function build_component() {
 	    esac
 	    ;;
 	gmp/*|mpfr/*|mpc/*)
-	    CONFIGURE=""
-	    MAKE_TARGET_ALL=""
-	    MAKE_TARGET_INSTALL="" ;;
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" )
+	    #CONFIGURE=""
+	    #MAKE_TARGET_ALL=""
+	    #MAKE_TARGET_INSTALL=""
+	    ;;
 	bison/*|expect/*)
 	;;
 	tcl/*)
