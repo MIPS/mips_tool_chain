@@ -896,6 +896,8 @@ function build_one_glibc() {
     export READELF=${target}-readelf
     export CC="${target}-gcc $FLAGS"
     export CXX="${target}-g++ $FLAGS"
+    # FIXME! As workaround for GCC11, we set CFLAGS to -O1 -g
+    export CFLAGS="-O1 -g"
 
     K=`get_linux_ver`
     bin_sfx=
@@ -914,6 +916,8 @@ function build_one_glibc() {
     F=( "${F[@]}" "--host=$libc_target" )
     F=( "${F[@]}" "--disable-profile" "--without-gd" "--without-cvs" )
     F=( "${F[@]}" "--enable-add-ons" )
+    # FIXME! As workaround for GCC11, we need to disable werror
+    F=( "${F[@]}" "--disable-werror" )
 
     case $target in
 	mips*-linux-*)
