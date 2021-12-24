@@ -896,8 +896,6 @@ function build_one_glibc() {
     export READELF=${target}-readelf
     export CC="${target}-gcc $FLAGS"
     export CXX="${target}-g++ $FLAGS"
-    # FIXME! As workaround for GCC11, we set CFLAGS to -O1 -g
-    export CFLAGS="-O1 -g"
 
     K=`get_linux_ver`
     bin_sfx=
