@@ -914,6 +914,8 @@ function build_one_glibc() {
     F=( "${F[@]}" "--host=$libc_target" )
     F=( "${F[@]}" "--disable-profile" "--without-gd" "--without-cvs" )
     F=( "${F[@]}" "--enable-add-ons" )
+    # FIXME! As workaround for GCC11, we need to disable werror
+    F=( "${F[@]}" "--disable-werror" )
 
     case $target in
 	mips*-linux-*)
