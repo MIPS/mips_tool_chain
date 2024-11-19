@@ -1161,7 +1161,7 @@ function build_component() {
 
     case $target in
 	mips*)
-		GCC_FLAGS=( "${GCC_FLAGS[@]}" "--with-mips-plt" ) ;;
+		GCC_FLAGS=( "${GCC_FLAGS[@]}" "--with-mips-plt" "--with-tune=i6500" ) ;;
     esac
 
     local F=( )
