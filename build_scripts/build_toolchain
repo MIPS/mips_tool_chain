@@ -256,9 +256,7 @@ function parse_args() {
     # versions are only used for things stored in packages.git.
 
     case $target in
-	mips*mti*) version_arglist=( "$version_arglist" "linux:4.9.189" ) ;;
-	mips*img*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
-	mips*) version_arglist=( "$version_arglist" "linux:4.7.3" ) ;;
+	mips*) version_arglist=( "$version_arglist" "linux:4.9.189" ) ;;
 	nanomips*) version_arglist=( "$version_arglist" "linux:nda" ) ;;
 	i686*|x86_64*) version_arglist=( "$version_arglist" "linux:4.15.0" ) ;;
     esac
