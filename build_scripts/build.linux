@@ -117,7 +117,7 @@ case x$HOSTTRIPLE in
   ;;
 esac
 
-build_toolchain build "${HOSTG[@]}" pixman || exit 1
+b/build_toolchain build "${HOSTG[@]}" pixman || exit 1
 b/build_toolchain build "${HOSTG[@]}" libffi || exit 1
 b/build_toolchain build "${HOSTG[@]}" glib || exit 1
 b/build_toolchain build "${G[@]}" qemu || exit 1
