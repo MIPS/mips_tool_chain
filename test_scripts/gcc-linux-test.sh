@@ -215,7 +215,7 @@ if [[ $RUNLIST =~ gcc ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg  -v -v -v &> test.log &
+	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.gcc"$$" --without-gfortran --without-objc --without-g++ --with-gcc=$TOOLCHAIN/bin/$TRIPLET"-gcc" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
@@ -238,7 +238,7 @@ if [[ $RUNLIST =~ g\+\+ ]]; then
 	if [ $jcount -gt $JOB_MAX ]; then
 	    wait ${jqueue[$((jcount - JOB_MAX))]}
 	fi
-	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg -v -v -v &> test.log &
+	DEJAGNU_SIM_GCC="$DEJAGNU_SIM_GCC" DEJAGNU_SIM_OPTIONS="$DEJAGNU_SIM_OPTIONS" DEJAGNU_SIM="$DEJAGNU_SIM" DEJAGNU_SIM_LINK_FLAGS="-Wl,--defsym,__memory_size=32M" PATH=$TOOLCHAIN/bin:$HOSTTOOLS/bin:$SRCDIR/dejagnu:$PATH $SRCDIR/gcc/contrib/test_installed.g++"$$" --without-gfortran --without-objc --without-gcc --with-g++=$TRIPLET"-g++" --prefix=$TOOLCHAIN --target=$TRIPLET --target_board=$cfg &> test.log &
 	jqueue+=( $! )
 	popd > /dev/null
     done
