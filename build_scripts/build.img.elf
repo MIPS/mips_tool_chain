@@ -1,0 +1,115 @@
+#!/bin/bash
+# This script uses the build script to create a newlib based bare-metal
+# GCC package.  Set TOPDIR and TARGET before running.  TOPDIR should be
+# The directory where you want to build everything (it will contain subdirs
+# for sources, objects, etc) and TARGET should either be mips-mti-elf or
+# mips-img-elf (those are the only tested targets).
+
+TOPDIR=/directory
+GITHOME=ssh://git@github.com/MIPS
+TARGET=mips-img-elf
+INSTALL=${MIPS_INSTALL:-$TOPDIR/install-$TARGET}
+BUILDINSTALL=$TOPDIR/install-build
+HOSTINSTALL=$TOPDIR/install-host
+OBJ=$TOPDIR/obj-$TARGET
+BUILDOBJ=$TOPDIR/obj-build
+HOSTOBJ=$TOPDIR/obj-host
+SYSROOT=$INSTALL/$TARGET
+HOSTTOOLSROOT=${HOSTTOOLSROOT:-/projects/mipssw/toolchains/}
+BUILDPATH=${BUILDPATH}:$INSTALL/bin
+BUILDPATH=${BUILDPATH#:*} # trim leading :
+DATE=`date +%Y%m%d_%H%M`
+TOOLSVERSION=${TOOLSVERSION:-"Scratch/experimental build for img-elf $DATE"}
+
+# Set the host. Supported hosts are:
+# x86_64-pc-linux-gnu - 64-bit Linux (CentOS 5 upwards)
+# i686-pc-linux-gnu   - 32-bit Linux (CentOS 5 upwards)
+# x86_64-w64-mingw32  - 64-bit Windows
+# i686-w64-mingw32    - 32-bit Windows
+#
+# The Windows hosts require a canadian cross environment, i.e. a
+# reference cross compiler that can execute on the current build
+# machine must be in the path.  It also requires a reference python
+# interpreter, typically installed under python-root/bin in the
+# reference cross compiler tree, to be in the path.  These
+# requirements are not met by this script and must be handled
+# manually.
+
+HOSTTRIPLE=${HOSTTRIPLE:-x86_64-pc-linux-gnu}
+
+case x$HOSTTRIPLE in
+  xx86_64-pc-linux-gnu | xi686-pc-linux-gnu )
+    # We pretend the build machine is the host on Linux as we can
+    # execute the binaries we create.
+    if [ "x$HOSTVERSION" == "x" ]; then
+      HOSTVERSION=4.9.4-centos6
+    fi
+    HOSTOBJ="${HOSTOBJ}-$HOSTTRIPLE"
+    HOSTINSTALL="${HOSTINSTALL}-$HOSTTRIPLE"
+    BUILDPATH="${BUILDPATH}:$HOSTTOOLSROOT/$HOSTTRIPLE/$HOSTVERSION/bin"
+    HOSTOPTIONS="--host=$HOSTTRIPLE --build_triple=$HOSTTRIPLE"
+    PYTHONG="";;
+  xx86_64-w64-mingw32 | xi686-w64-mingw32 )
+    if [ "x$HOSTVERSION" == "x" ]; then
+      HOSTVERSION=4.9.4_v6.0.0
+    fi
+    HOSTOBJ="${HOSTOBJ}-$HOSTTRIPLE"
+    HOSTINSTALL="${HOSTINSTALL}-$HOSTTRIPLE"
+    BUILDPATH="${BUILDPATH}:$HOSTTOOLSROOT/$HOSTTRIPLE/$HOSTVERSION/bin:$HOSTTOOLSROOT/native/bin"
+    HOSTOPTIONS="--host=$HOSTTRIPLE"
+    PYTHONG="--build_triple=x86_64-pc-linux-gnu";;
+  *)
+    ;;
+esac
+
+BUILDPATH="$BUILDINSTALL/bin:${BUILDPATH}:${HOSTINSTALL}/bin"
+
+cd $TOPDIR
+
+G=(--path=$BUILDPATH --git_home=$GITHOME --jobs=${JOBS:-8})
+BUILDG=("${G[@]}" --build=$BUILDOBJ --prefix=$BUILDINSTALL)
+G+=($HOSTOPTIONS --buildlibs=$BUILDINSTALL --hostlibs=$HOSTINSTALL)
+HOSTG=("${G[@]}" --build=$HOSTOBJ --prefix=$HOSTINSTALL)
+G+=(--build=$OBJ --with-pkgversion="$TOOLSVERSION")
+PYTHONG=("${G[@]}" --prefix=$INSTALL/python-root "${PYTHONG[@]}")
+G+=(--prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT)
+
+# If you want to force an update of your sources before the build.
+# uncommment the next line.
+# b/build_toolchain update "${G[@]}" texinfo
+# b/build_toolchain update "${G[@]}" termcap ncurses expat
+# b/build_toolchain update "${G[@]}" binutils gdb newlib gcc smallclib
+# b/build_toolchain update "${G[@]}" zlib pixman libffi glib qemu
+
+# If you do not want to use the system gmp, mpfr or mpc
+# uncomment the next line.
+# b/build_toolchain update "${G[@]}" gmp mpfr mpc
+
+# b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
+
+b/build_toolchain build "${G[@]}" binutils || exit 1
+b/build_toolchain build "${G[@]}" gcc || exit 1
+#b/build_toolchain build "${G[@]}" smallclib || exit 1
+
+b/build_toolchain build "${HOSTG[@]}" expat || exit 1
+b/build_toolchain build "${HOSTG[@]}" termcap || exit 1
+b/build_toolchain build "${HOSTG[@]}" ncurses || exit 1
+b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
+b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
+b/build_toolchain build "${G[@]}" gdb || exit 1
+b/build_toolchain build "${HOSTG[@]}" zlib || exit 1
+b/build_toolchain build "${HOSTG[@]}" openssl || exit 1
+b/build_toolchain build "${PYTHONG[@]}" python || exit 1
+case x$HOSTTRIPLE in
+  # This only works for linux hosts
+  xx86_64-pc-linux-gnu | xi686-pc-linux-gnu )
+  b/build_toolchain build "${G[@]}" gdb-py || exit 1
+  ;;
+esac
+b/build_toolchain build "${HOSTG[@]}" pixman || exit 1
+b/build_toolchain build "${HOSTG[@]}" libffi || exit 1
+b/build_toolchain build "${HOSTG[@]}" glib || exit 1
+b/build_toolchain build "${G[@]}" qemu || exit 1
+
+# This does a single run with default arch, endian, abi, and float setting.
+#b/build_toolchain check "${G[@]}" --runtestflags="--target_board='mips-sim-mti32'" gcc
