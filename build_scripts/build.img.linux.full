@@ -85,7 +85,9 @@ G+=(--prefix=$INSTALL --target=$TARGET --sysroot=$SYSROOT)
 # uncomment the next line.
 b/build_toolchain update "${G[@]}" gmp mpfr mpc
 
-b/build_toolchain build "${BUILDG[@]}" texinfo || exit 1
+b/build_toolchain build "${BUILDG[@]}" gmp || exit 1
+b/build_toolchain build "${BUILDG[@]}" mpfr || exit 1
+b/build_toolchain build "${BUILDG[@]}" --version=texinfo:7.2 texinfo || exit 1
 
 if [ -f $TOPDIR/src/packages/make* ]; then
 	b/build_toolchain build "${BUILDG[@]}" make || exit 1
@@ -104,7 +106,7 @@ b/build_toolchain build "${G[@]}" gcc || exit 1
 
 b/build_toolchain build "${HOSTG[@]}" expat || exit 1
 b/build_toolchain build "${HOSTG[@]}" termcap || exit 1
-b/build_toolchain build "${HOSTG[@]}" ncurses || exit 1
+b/build_toolchain build "${HOSTG[@]}" --version=ncurses:6.4 ncurses || exit 1
 b/build_toolchain build "${HOSTG[@]}" libiconv || exit 1
 b/build_toolchain build "${HOSTG[@]}" gettext || exit 1
 b/build_toolchain build "${G[@]}" gdb || exit 1

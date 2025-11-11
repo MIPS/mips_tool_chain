@@ -1254,7 +1254,7 @@ function build_component() {
 		    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld \
 					 $binutils_install_pdf" ;;
 	    esac
-	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" ) ;;
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-newlib" "--with-sysroot=$sysroot" "--disable-gdb" "--disable-sim") ;;
 
 	binutils-gas/* )
 	    # Ugly fix for bison version dependency which only surfaces due to
@@ -1324,7 +1324,7 @@ function build_component() {
 		    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof \
 					 $binutils_install_pdf" ;;
 	    esac
-	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-sysroot=$sysroot" ) ;;
+	    F=( "${F[@]}" "${H[@]}" "--target=$target" "--with-sysroot=$sysroot" "--disable-gdb" "--disable-sim") ;;
 	binutils/native)
 	    MAKE_TARGET_ALL="all-zlib all-binutils all-gas all-ld all-gprof"
 	    MAKE_TARGET_INSTALL="install-binutils install-gas install-ld install-gprof" ;;
@@ -1453,7 +1453,7 @@ function build_component() {
 	newlib/*)
 	    F=( "${F[@]}" "${H[@]}" "--target=$target" ) ;;
 	gdb-py/*mips*)
-	    F=( "${F[@]}" "--with-python=$prefix/python-root" )
+	    F=( "${F[@]}" "--with-python=$prefix/python-root/bin/python3" )
 	    F=( "${F[@]}" "--program-suffix=-py" "--program-prefix=$target-" )
 	    # PYTHONHOME can mess-up execution of specified python
 	    unset PYTHONHOME
@@ -1487,7 +1487,7 @@ function build_component() {
 		# Needed for cross compiled environments where ncurses and termcap
 		# libraries are either not available in the sysroot or contain
 		# shared library versions.
-		export LDFLAGS="-L$hostlibs/lib"
+		export LDFLAGS="-L$hostlibs/lib -ltinfo"
 		export CPPFLAGS="-I $hostlibs/include"
 	    fi
 	    F=( "${F[@]}" "${H[@]}" "--disable-libmcheck" "--disable-nls" )
@@ -1501,6 +1501,7 @@ function build_component() {
 		esac
 		F=( "${F[@]}" "--without-python" )
 	    fi
+	    F=( "${F[@]}" "--with-gmp=$buildlibs" "--with-mpfr=$buildlibs" "--with-static-standard-libraries" )
 	    ;;
 	gdb/native)
 	    MAKE_TARGET_ALL="all-gdb"
@@ -1571,7 +1572,7 @@ function build_component() {
 	ncurses/*)
 	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--disable-nls" )
 	    F=( "${F[@]}" "--with-terminfo-dirs=/usr/share/terminfo" )
-	    F=( "${F[@]}" "--without-ada" "--without-tests" "--without-progs" ) ;;
+	    F=( "${F[@]}" "--without-ada" "--without-tests" ) ;;
 	termcap/*)
 	    F=( "${F[@]}" "--disable-shared" "--disable-nls" )
 	    MAKE_TARGET_INSTALL="install oldincludedir=" ;;
@@ -1656,8 +1657,14 @@ function build_component() {
 		    ;;
 	    esac
 	    ;;
-	gmp/*|mpfr/*|mpc/*)
+	gmp/*)
 	    F=( "${F[@]}" "${H[@]}" "--disable-shared" )
+	    #CONFIGURE=""
+	    #MAKE_TARGET_ALL=""
+	    #MAKE_TARGET_INSTALL=""
+	    ;;
+	mpfr/*|mpc/*)
+	    F=( "${F[@]}" "${H[@]}" "--disable-shared" "--with-gmp=$prefix" )
 	    #CONFIGURE=""
 	    #MAKE_TARGET_ALL=""
 	    #MAKE_TARGET_INSTALL=""
